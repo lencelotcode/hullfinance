@@ -390,44 +390,60 @@ export default function AccountsPage() {
 
       {/* Add Account Form */}
       <div className="hf-panel">
-        <div className="hf-section-title" style={{ marginBottom: '16px' }}>Add Account</div>
-        <div className="hf-form-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
-          <div className="hf-form-field">
-            <label className="hf-form-label">Account Name</label>
-            <input type="text" placeholder="e.g. Barclays Current" value={name} onChange={(e) => setName(e.target.value)} />
-          </div>
-          <div className="hf-form-field">
-            <label className="hf-form-label">Bank / Institution</label>
-            <input type="text" placeholder="Optional" value={bank} onChange={(e) => setBank(e.target.value)} />
-          </div>
-          <div className="hf-form-field">
-            <label className="hf-form-label">Type</label>
-            <select value={type} onChange={(e) => setType(e.target.value)}>
-              {ACCOUNT_TYPES.map((t) => (
-                <option key={t}>{t}</option>
-              ))}
-            </select>
-          </div>
-          <div className="hf-form-field">
-            <label className="hf-form-label">Last 4 digits</label>
-            <input type="text" placeholder="4521" maxLength={4} value={last4} onChange={(e) => setLast4(e.target.value.replace(/\D/g, ''))} />
-          </div>
-          <div className="hf-form-field">
-            <label className="hf-form-label">Opening Balance</label>
-            <input type="number" placeholder="0.00" step="0.01" value={balance} onChange={(e) => setBalance(e.target.value)} />
-          </div>
-          <div className="hf-form-field">
-            <label className="hf-form-label">Currency</label>
-            <select value={currency} onChange={(e) => setCurrency(e.target.value as Currency)}>
-              <option value="GBP">GBP</option>
-              <option value="INR">INR</option>
-            </select>
-          </div>
+        <div className="hf-section-title" style={{ marginBottom: '12px' }}>Add Account</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '10px' }}>
+          <input
+            type="text"
+            placeholder="Account Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            style={{ flex: 1, minWidth: '140px' }}
+          />
+          <input
+            type="text"
+            placeholder="Bank (optional)"
+            value={bank}
+            onChange={(e) => setBank(e.target.value)}
+            style={{ flex: 1, minWidth: '120px' }}
+          />
+          <select
+            value={type}
+            onChange={(e) => setType(e.target.value)}
+            style={{ width: '130px' }}
+          >
+            {ACCOUNT_TYPES.map((t) => (
+              <option key={t}>{t}</option>
+            ))}
+          </select>
+          <input
+            type="text"
+            placeholder="Last 4 digits"
+            maxLength={4}
+            value={last4}
+            onChange={(e) => setLast4(e.target.value.replace(/\D/g, ''))}
+            style={{ width: '100px' }}
+          />
+          <input
+            type="number"
+            placeholder="Opening Balance"
+            step="0.01"
+            value={balance}
+            onChange={(e) => setBalance(e.target.value)}
+            style={{ width: '130px' }}
+          />
+          <select
+            value={currency}
+            onChange={(e) => setCurrency(e.target.value as Currency)}
+            style={{ width: '80px' }}
+          >
+            <option value="GBP">GBP</option>
+            <option value="INR">INR</option>
+          </select>
+          <button className="hf-btn" style={{ padding: '8px 14px', fontSize: '12px' }} onClick={handleAdd}>
+            <Plus size={14} strokeWidth={2.5} />
+            Add Account
+          </button>
         </div>
-        <button className="hf-btn" onClick={handleAdd} style={{ marginTop: '12px' }}>
-          <Plus size={14} strokeWidth={2.5} />
-          Add Account
-        </button>
       </div>
     </div>
   );
