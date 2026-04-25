@@ -141,6 +141,16 @@ function loadFromLocalStorage(): AppState {
     }
   });
 
+  // Migrate accounts: map old types to new types
+  const typeMap: Record<string, string> = {
+    'Bank Account': 'Current',
+    'Digital Wallet': 'Cash',
+  };
+  state.accounts.forEach((a: any) => {
+    if (typeMap[a.type]) a.type = typeMap[a.type];
+    if (!a.updatedAt) a.updatedAt = new Date().toISOString();
+  });
+
   return state;
 }
 

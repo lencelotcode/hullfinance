@@ -23,7 +23,7 @@ export const INCOME_CATS = [
 ];
 
 export const ACCOUNT_TYPES = [
-  'Cash', 'Bank Account', 'Credit Card', 'Savings', 'Digital Wallet'
+  'Current', 'Savings', 'Credit Card', 'Cash', 'Investment'
 ];
 
 export interface Transaction {
@@ -83,9 +83,12 @@ export interface Debt {
 export interface Account {
   id: string;
   name: string;
+  bank?: string;
   type: string;
+  last4?: string;
   balance: number;
   currency: Currency;
+  updatedAt?: string;
 }
 
 export interface Bill {

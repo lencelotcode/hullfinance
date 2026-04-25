@@ -53,6 +53,7 @@ type Action =
   | { type: 'ADD_ACCOUNT'; payload: Omit<Account, 'id'> }
   | { type: 'DELETE_ACCOUNT'; payload: string }
   | { type: 'UPDATE_ACCOUNT_BALANCE'; payload: { id: string; delta: number } }
+  | { type: 'EDIT_ACCOUNT'; payload: { id: string; updates: Partial<Account> } }
   | { type: 'ADD_BILL'; payload: Omit<Bill, 'id' | 'status' | 'paidDate'> }
   | { type: 'PAY_BILL'; payload: string }
   | { type: 'DELETE_BILL'; payload: string }
@@ -233,6 +234,14 @@ function reducer(state: AppState, action: Action): AppState {
     case 'UPDATE_ACCOUNT_BALANCE': {
       const accounts = state.accounts.map((a) =>
         a.id === action.payload.id ? { ...a, balance: a.balance + action.payload.delta } : a
+      );
+      newState = { ...state, accounts };
+      saveState(newState);
+      return newState;
+    }
+    case 'EDIT_ACCOUNT': {
+      const accounts = state.accounts.map((a) =>
+        a.id === action.payload.id ? { ...a, ...action.payload.updates } : a
       );
       newState = { ...state, accounts };
       saveState(newState);
