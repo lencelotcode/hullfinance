@@ -250,11 +250,22 @@ function LoanCard({ loan, state, dispatch, handleRepay, editingRepayment, setEdi
             ))}
           </div>
         )}
-        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '10px' }}>
-          <input placeholder="Description (e.g. University fee)" value={utilDesc} onChange={(e) => setUtilDesc(e.target.value)} style={{ flex: 1, minWidth: '120px' }} />
-          <input type="number" placeholder="Amount GBP" value={utilAmount} onChange={(e) => setUtilAmount(e.target.value)} style={{ width: '110px' }} />
-          <input type="date" value={utilDate} onChange={(e) => setUtilDate(e.target.value)} style={{ width: '130px' }} />
-          <button className="hf-btn" style={{ padding: '8px 14px', fontSize: '12px' }} onClick={() => {
+        <div className="hf-panel" style={{ marginTop: '16px' }}>
+          <div className="hf-form-grid">
+            <div className="hf-form-field">
+              <label className="hf-form-label">Amount</label>
+              <input type="number" placeholder="Amount GBP" min="0" step="0.01" value={utilAmount} onChange={(e) => setUtilAmount(e.target.value)} />
+            </div>
+            <div className="hf-form-field">
+              <label className="hf-form-label">Date</label>
+              <input type="date" value={utilDate} onChange={(e) => setUtilDate(e.target.value)} />
+            </div>
+            <div className="hf-form-field hf-form-full">
+              <label className="hf-form-label">Description</label>
+              <input type="text" placeholder="Description (e.g. University fee)" value={utilDesc} onChange={(e) => setUtilDesc(e.target.value)} />
+            </div>
+          </div>
+          <button className="hf-btn" style={{ width: '100%', justifyContent: 'center' }} onClick={() => {
             const gbp = parseFloat(utilAmount);
             if (!utilDesc.trim() || !gbp || gbp <= 0) return alert('Enter description and valid GBP amount');
             const currentUtilized = loan.utilizations.reduce((sum: number, u: any) => sum + Number(u.inrAmount), 0);
