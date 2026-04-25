@@ -1,7 +1,4 @@
-import React from 'react';
 import { useFinance } from '@/context/FinanceContext';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import {
   LayoutDashboard,
   ArrowDownRight,
@@ -40,7 +37,7 @@ const TABS = [
 ] as const;
 
 function getMonthOptions() {
-const months: string[] = [];
+  const months: string[] = [];
   const now = new Date();
   for (let i = -2; i <= 6; i++) {
     const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
@@ -56,12 +53,12 @@ export default function App() {
   // Show error state
   if (error) {
     return (
-      <div className="min-h-screen bg-zinc-950 text-zinc-200 flex items-center justify-center p-4">
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'var(--bg)', color: 'var(--text)' }}>
         <div className="max-w-md text-center">
-          <div className="text-red-400 text-6xl mb-4">⚠️</div>
-          <h2 className="text-xl font-bold text-white mb-2">Failed to Load</h2>
-          <p className="text-zinc-400 mb-4">{error}</p>
-          <p className="text-zinc-500 text-sm">The app will use localStorage instead</p>
+          <div className="text-6xl mb-4" style={{ color: 'var(--red)' }}>⚠️</div>
+          <h2 className="text-xl font-bold mb-2" style={{ fontFamily: 'var(--font-head)', color: 'var(--text)' }}>Failed to Load</h2>
+          <p className="mb-4" style={{ color: 'var(--muted)' }}>{error}</p>
+          <p className="text-sm" style={{ color: 'var(--muted2)' }}>The app will use localStorage instead</p>
         </div>
       </div>
     );
@@ -70,104 +67,102 @@ export default function App() {
   // Show loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-zinc-950 text-zinc-200 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg)', color: 'var(--text)' }}>
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-zinc-600 border-t-zinc-200 mb-4"></div>
-          <p className="text-zinc-400">Loading your finance data...</p>
+          <div className="inline-block animate-spin h-12 w-12 border-4 mb-4" style={{ borderColor: 'var(--border2)', borderTopColor: 'var(--text)' }}></div>
+          <p style={{ color: 'var(--muted)' }}>Loading your finance data...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-200">
-      <div className="max-w-5xl mx-auto px-4 py-6 pb-24">
-        {/* Top Bar */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-zinc-100 text-zinc-900">
-              <LayoutDashboard size={20} />
-            </div>
-            <div>
-              <h1 className="text-lg font-bold tracking-tight text-white">Hull Finance Tracker</h1>
-              <p className="text-xs text-zinc-500">UK Masters Student Edition</p>
-            </div>
+    <div className="min-h-screen" style={{ background: 'var(--bg)', color: 'var(--text)' }}>
+      {/* HEADER */}
+      <header className="hf-header">
+        <div className="hf-header-left">
+          <div className="hf-logo-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#F6EFD2" strokeWidth="2" width="20" height="20">
+              <rect x="3" y="3" width="7" height="7"/>
+              <rect x="14" y="3" width="7" height="7"/>
+              <rect x="3" y="14" width="7" height="7"/>
+              <rect x="14" y="14" width="7" height="7"/>
+            </svg>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 rounded-full px-3 py-1.5">
-              <span className="text-xs text-zinc-500">1 GBP =</span>
-              <InputInline
-                value={state.exchangeRate}
-                onChange={(v) => dispatch({ type: 'SET_EXCHANGE_RATE', payload: v })}
-              />
-              <span className="text-xs text-zinc-500">INR</span>
-            </div>
-            <div className="flex gap-1 bg-zinc-900 border border-zinc-800 rounded-full p-1">
-              <button
-                onClick={() => dispatch({ type: 'SET_CURRENCY', payload: 'GBP' })}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${state.currency === 'GBP' ? 'bg-zinc-100 text-zinc-900' : 'text-zinc-500 hover:text-zinc-300'}`}
-              >
-                £ GBP
-              </button>
-              <button
-                onClick={() => dispatch({ type: 'SET_CURRENCY', payload: 'INR' })}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${state.currency === 'INR' ? 'bg-zinc-100 text-zinc-900' : 'text-zinc-500 hover:text-zinc-300'}`}
-              >
-                ₹ INR
-              </button>
-            </div>
+          <div>
+            <div className="hf-brand-name">Hull Finance Tracker</div>
+            <div className="hf-brand-sub">UK Masters Student Edition</div>
           </div>
         </div>
-
-        {/* Month Filter */}
-        <div className="flex items-center gap-3 mb-6">
-          <div className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 rounded-full px-3 py-1.5">
-            <span className="text-xs text-zinc-500 font-medium">Month</span>
-            <Select
-              value={state.filterMonth}
-              onValueChange={(v) => dispatch({ type: 'SET_MONTH', payload: v })}
+        <div className="hf-header-right">
+          <div className="hf-fx-row">
+            <span>1 GBP =</span>
+            <input
+              className="hf-fx-input"
+              type="number"
+              value={state.exchangeRate}
+              min="1"
+              step="0.01"
+              onChange={(e) => {
+                const val = parseFloat(e.target.value);
+                if (val > 0) dispatch({ type: 'SET_EXCHANGE_RATE', payload: val });
+              }}
+            />
+            <span>INR</span>
+          </div>
+          <div className="hf-currency-toggle">
+            <button
+              className={`hf-currency-btn ${state.currency === 'GBP' ? 'active' : ''}`}
+              onClick={() => dispatch({ type: 'SET_CURRENCY', payload: 'GBP' })}
             >
-              <SelectTrigger className="bg-transparent border-none text-zinc-200 text-xs font-medium h-auto py-0 px-2 w-auto focus:ring-0">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-zinc-900 border-zinc-800">
-                {getMonthOptions().map((m) => (
-                  <SelectItem key={m} value={m} className="text-zinc-200 text-xs">
-                    {monthLabel(m)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              £ GBP
+            </button>
+            <button
+              className={`hf-currency-btn ${state.currency === 'INR' ? 'active' : ''}`}
+              onClick={() => dispatch({ type: 'SET_CURRENCY', payload: 'INR' })}
+            >
+              ₹ INR
+            </button>
           </div>
-          <Badge variant="outline" className="text-[10px] border-zinc-700 text-zinc-500 bg-zinc-900">
-            {state.currency} ONLY
-          </Badge>
         </div>
+      </header>
 
-        {/* Tabs */}
-        <div className="flex gap-2 mb-6 overflow-x-auto pb-1 scrollbar-hide">
-          {TABS.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.key;
-            return (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key as any)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-all border ${
-                  isActive
-                    ? 'bg-zinc-100 text-zinc-900 border-zinc-100'
-                    : 'bg-transparent text-zinc-500 border-zinc-800 hover:border-zinc-600 hover:text-zinc-300'
-                }`}
-              >
-                <Icon size={14} />
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
+      {/* MONTH BAR */}
+      <div className="hf-month-bar">
+        <span className="hf-month-label">Month</span>
+        <select
+          className="hf-month-select"
+          value={state.filterMonth}
+          onChange={(e) => dispatch({ type: 'SET_MONTH', payload: e.target.value })}
+        >
+          {getMonthOptions().map((m) => (
+            <option key={m} value={m}>{monthLabel(m)}</option>
+          ))}
+        </select>
+        <span className="hf-inr-badge">{state.currency} ONLY</span>
+      </div>
 
-        {/* Page Content */}
-        <div>
+      {/* NAV TABS */}
+      <nav className="hf-nav-tabs">
+        {TABS.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.key;
+          return (
+            <button
+              key={tab.key}
+              className={`hf-nav-tab ${isActive ? 'active' : ''}`}
+              onClick={() => setActiveTab(tab.key as any)}
+            >
+              <Icon size={14} />
+              {tab.label}
+            </button>
+          );
+        })}
+      </nav>
+
+      {/* MAIN */}
+      <main className="hf-main">
+        <div className="hf-page-enter">
           {activeTab === 'dashboard' && <Dashboard />}
           {activeTab === 'expenses' && <ExpensesPage />}
           {activeTab === 'income' && <IncomePage />}
@@ -179,26 +174,7 @@ export default function App() {
           {activeTab === 'analytics' && <AnalyticsPage />}
           {activeTab === 'settings' && <SettingsPage />}
         </div>
-      </div>
+      </main>
     </div>
-  );
-}
-
-function InputInline({ value, onChange }: { value: number; onChange: (v: number) => void }) {
-  const [val, setVal] = React.useState(String(value));
-  return (
-    <input
-      type="number"
-      min="1"
-      step="0.01"
-      value={val}
-      onChange={(e) => setVal(e.target.value)}
-      onBlur={() => {
-        const n = parseFloat(val);
-        if (n > 0) onChange(n);
-        else setVal(String(value));
-      }}
-      className="w-16 bg-transparent text-xs text-zinc-200 font-medium focus:outline-none text-center"
-    />
   );
 }

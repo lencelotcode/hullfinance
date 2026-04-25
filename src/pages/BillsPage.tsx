@@ -1,9 +1,5 @@
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Trash2, Plus, CheckCircle2, Receipt } from 'lucide-react';
+import { Trash2, Plus } from 'lucide-react';
 import { useFinance } from '@/context/FinanceContext';
 import { fmt } from '@/lib/finance';
 
@@ -20,11 +16,6 @@ export default function BillsPage() {
   const paid = bills.filter((b) => b.status === 'paid');
   const totalPending = upcoming.reduce((s, b) => s + Number(b.amount), 0);
   const totalPaid = paid.reduce((s, b) => s + Number(b.amount), 0);
-  const overdue = upcoming.filter((b) => new Date(b.dueDate) < new Date());
-  const dueToday = upcoming.filter((b) => {
-    const daysLeft = Math.ceil((new Date(b.dueDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-    return daysLeft === 0;
-  });
 
   function handleAdd() {
     const val = parseFloat(amount);
@@ -40,81 +31,113 @@ export default function BillsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-zinc-900 border-zinc-800"><CardContent className="p-4"><p className="text-xs text-zinc-500">Pending</p><p className="text-lg font-bold text-amber-400">{fmt(totalPending, state.currency)}</p></CardContent></Card>
-        <Card className="bg-zinc-900 border-zinc-800"><CardContent className="p-4"><p className="text-xs text-zinc-500">Paid</p><p className="text-lg font-bold text-emerald-400">{fmt(totalPaid, state.currency)}</p></CardContent></Card>
-        <Card className="bg-zinc-900 border-zinc-800"><CardContent className="p-4"><p className="text-xs text-zinc-500">Overdue</p><p className="text-lg font-bold text-red-400">{overdue.length}</p></CardContent></Card>
-        <Card className="bg-zinc-900 border-zinc-800"><CardContent className="p-4"><p className="text-xs text-zinc-500">Due Today</p><p className="text-lg font-bold text-blue-400">{dueToday.length}</p></CardContent></Card>
+    <div>
+      {/* Stats */}
+      <div className="hf-stat-grid cols-3">
+        <div className="hf-stat-card">
+          <div className="hf-stat-card-header">
+            <span className="hf-stat-card-label">Total Due</span>
+            <span className="hf-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#B03030" strokeWidth="2" width="16" height="16"><rect x="5" y="2" width="14" height="20"/><line x1="9" y1="7" x2="15" y2="7"/></svg></span>
+          </div>
+          <div className="hf-stat-value red">{fmt(totalPending, state.currency)}</div>
+        </div>
+        <div className="hf-stat-card">
+          <div className="hf-stat-card-header">
+            <span className="hf-stat-card-label">Paid This Month</span>
+            <span className="hf-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#5A9E6F" strokeWidth="2" width="16" height="16"><path d="M7 3l-4 4 4 4"/><path d="M3 7h18"/></svg></span>
+          </div>
+          <div className="hf-stat-value green">{fmt(totalPaid, state.currency)}</div>
+        </div>
+        <div className="hf-stat-card">
+          <div className="hf-stat-card-header">
+            <span className="hf-stat-card-label">Bills Remaining</span>
+            <span className="hf-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#C9973A" strokeWidth="2" width="16" height="16"><rect x="5" y="2" width="14" height="20"/><line x1="9" y1="7" x2="15" y2="7"/></svg></span>
+          </div>
+          <div className="hf-stat-value amber">{upcoming.length}</div>
+        </div>
       </div>
 
-      <Card className="bg-zinc-900 border-zinc-800">
-        <CardHeader><CardTitle className="text-sm font-semibold text-zinc-200">Add Bill Reminder</CardTitle></CardHeader>
-        <CardContent className="space-y-3">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <Input placeholder="Bill name" value={name} onChange={(e) => setName(e.target.value)} className="bg-zinc-800 border-zinc-700 text-zinc-200" />
-            <Input type="number" placeholder={`Amount (${state.currency === 'GBP' ? '£' : '₹'})`} value={amount} onChange={(e) => setAmount(e.target.value)} min="0" step="0.01" className="bg-zinc-800 border-zinc-700 text-zinc-200" />
-            <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="bg-zinc-800 border-zinc-700 text-zinc-200" />
+      {/* Add Form */}
+      <div className="hf-panel" style={{ marginBottom: '20px' }}>
+        <div className="hf-section-title" style={{ marginBottom: '16px' }}>Add Bill</div>
+        <div className="hf-form-grid cols-3">
+          <div className="hf-form-field">
+            <label className="hf-form-label">Bill Name</label>
+            <input type="text" placeholder="e.g. Netflix" value={name} onChange={(e) => setName(e.target.value)} />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <select value={frequency} onChange={(e) => setFrequency(e.target.value as any)} className="bg-zinc-800 border-zinc-700 text-zinc-200 rounded-md px-3 py-2 text-sm">
-              <option value="once">One-time</option>
+          <div className="hf-form-field">
+            <label className="hf-form-label">Amount</label>
+            <input type="number" placeholder="0.00" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} />
+          </div>
+          <div className="hf-form-field">
+            <label className="hf-form-label">Due Date</label>
+            <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+          </div>
+          <div className="hf-form-field">
+            <label className="hf-form-label">Category</label>
+            <select>
+              <option>Utilities</option>
+              <option>Subscriptions</option>
+              <option>Rent</option>
+              <option>Insurance</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div className="hf-form-field">
+            <label className="hf-form-label">Recurring</label>
+            <select value={frequency} onChange={(e) => setFrequency(e.target.value as any)}>
               <option value="monthly">Monthly</option>
               <option value="weekly">Weekly</option>
               <option value="yearly">Yearly</option>
+              <option value="once">One-time</option>
             </select>
-            <Input placeholder="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} className="bg-zinc-800 border-zinc-700 text-zinc-200" />
           </div>
-          <Button onClick={handleAdd} className="bg-zinc-100 text-zinc-900 hover:bg-white rounded-full"><Plus size={16} className="mr-1" /> Add Bill</Button>
-        </CardContent>
-      </Card>
+        </div>
+        <button className="hf-btn" onClick={handleAdd}>
+          <Plus size={14} strokeWidth={2.5} />
+          Add Bill
+        </button>
+      </div>
 
-      <Card className="bg-zinc-900 border-zinc-800">
-        <CardHeader><CardTitle className="text-sm font-semibold text-zinc-200">Upcoming Bills ({upcoming.length})</CardTitle></CardHeader>
-        <CardContent className="space-y-3">
-          {upcoming.length === 0 ? (
-            <p className="text-sm text-zinc-500 text-center py-8">No upcoming bills</p>
-          ) : (
-            upcoming.map((b) => {
-              const daysLeft = Math.ceil((new Date(b.dueDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-              const urgent = daysLeft < 0 ? 'red' : daysLeft <= 3 ? 'amber' : daysLeft <= 7 ? 'yellow' : 'blue';
-              return (
-                <div key={b.id} className="flex items-center justify-between py-3 border-b border-zinc-800 last:border-0">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-zinc-800"><Receipt size={16} className="text-zinc-400" /></div>
-                    <div>
-                      <p className="text-sm font-medium text-zinc-200">{b.name}</p>
-                      <p className="text-xs text-zinc-500">{b.note || 'Due ' + b.dueDate} · <Badge variant="outline" className={`text-xs ${urgent === 'red' ? 'border-red-500/30 text-red-400 bg-red-500/10' : urgent === 'amber' ? 'border-amber-500/30 text-amber-400 bg-amber-500/10' : 'border-blue-500/30 text-blue-400 bg-blue-500/10'}`}>{daysLeft < 0 ? 'Overdue' : daysLeft === 0 ? 'Due today' : daysLeft + ' days left'}</Badge></p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-semibold text-red-400 whitespace-nowrap">{fmt(b.amount, state.currency)}</p>
-                    <Button size="sm" className="bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/30 rounded-full text-xs" onClick={() => dispatch({ type: 'PAY_BILL', payload: b.id })}><CheckCircle2 size={14} className="mr-1" /> Pay</Button>
-                    <Button size="icon" variant="ghost" className="h-8 w-8 text-red-400 hover:bg-red-500/10" onClick={() => dispatch({ type: 'DELETE_BILL', payload: b.id })}><Trash2 size={14} /></Button>
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </CardContent>
-      </Card>
-
-      {paid.length > 0 && (
-        <Card className="bg-zinc-900 border-zinc-800">
-          <CardHeader><CardTitle className="text-sm font-semibold text-zinc-200">Paid Bills ({paid.length})</CardTitle></CardHeader>
-          <CardContent className="space-y-3">
-            {paid.slice(-5).reverse().map((b) => (
-              <div key={b.id} className="flex items-center justify-between py-2 border-b border-zinc-800 last:border-0 opacity-60">
-                <div>
-                  <p className="text-sm font-medium text-zinc-200">{b.name}</p>
-                  <p className="text-xs text-zinc-500">Paid on {b.paidDate}</p>
-                </div>
-                <p className="text-sm font-semibold text-emerald-400">{fmt(b.amount, state.currency)}</p>
+      {/* List */}
+      <div className="hf-panel">
+        <div className="hf-section-header">
+          <span className="hf-section-title">Upcoming Bills</span>
+          <span className="hf-section-count">{bills.length} bill{bills.length !== 1 ? 's' : ''}</span>
+        </div>
+        {bills.length === 0 ? (
+          <div className="hf-empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" width="32" height="32" style={{ margin: '0 auto 12px', opacity: 0.3, display: 'block' }}>
+              <circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>
+            </svg>
+            No bills added
+          </div>
+        ) : (
+          [...bills].sort((a, b) => {
+            if (a.status !== b.status) return a.status === 'paid' ? 1 : -1;
+            return (a.dueDate || '').localeCompare(b.dueDate || '');
+          }).map((b) => (
+            <div key={b.id} className="hf-bill-item">
+              <div className={`hf-bill-dot ${b.status === 'paid' ? 'paid' : 'due'}`} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="hf-tx-name" style={b.status === 'paid' ? { opacity: 0.4, textDecoration: 'line-through' } : {}}>{b.name}</div>
+                <div className="hf-tx-meta">{b.note || 'Due ' + b.dueDate} · {b.frequency}</div>
               </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <span className="hf-tx-amount expense" style={b.status === 'paid' ? { opacity: 0.4 } : {}}>{fmt(b.amount, state.currency)}</span>
+                {b.status !== 'paid' && (
+                  <button className="hf-btn-ghost" style={{ padding: '5px 10px', fontSize: '11px' }} onClick={() => dispatch({ type: 'PAY_BILL', payload: b.id })}>
+                    Mark Paid
+                  </button>
+                )}
+                <button className="hf-tx-delete" onClick={() => dispatch({ type: 'DELETE_BILL', payload: b.id })}>
+                  <Trash2 size={13} />
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
 }

@@ -1,12 +1,7 @@
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { Trash2, Plus, Pencil, X, Check } from 'lucide-react';
 import { useFinance } from '@/context/FinanceContext';
-import { fmt, fmtGBP, fmtINR, today, calculateLoanWithInterest } from '@/lib/finance';
+import { fmtGBP, fmtINR, today, calculateLoanWithInterest } from '@/lib/finance';
 import type { Loan } from '@/lib/types';
 
 export default function LoansPage() {
@@ -36,23 +31,9 @@ export default function LoansPage() {
     if (!val || val <= 0) return alert('Enter a valid amount');
     dispatch({
       type: 'ADD_LOAN',
-      payload: {
-        person: person.trim(),
-        amount: val,
-        date,
-        note: note.trim(),
-        currency: state.currency,
-        interestRate: parseFloat(interestRate) || 0,
-        interestType,
-        repayments: [],
-        utilizations: [],
-      },
+      payload: { person: person.trim(), amount: val, date, note: note.trim(), currency: state.currency, interestRate: parseFloat(interestRate) || 0, interestType, repayments: [], utilizations: [] },
     });
-    setPerson('');
-    setAmount('');
-    setNote('');
-    setInterestRate('0');
-    setInterestType('simple');
+    setPerson(''); setAmount(''); setNote(''); setInterestRate('0'); setInterestType('simple');
   }
 
   function handleRepay(loanId: string, gbpVal: string) {
@@ -65,81 +46,95 @@ export default function LoansPage() {
     const gbp = parseFloat(editAmount);
     if (!gbp || gbp <= 0) return alert('Enter a valid GBP amount');
     dispatch({ type: 'EDIT_REPAYMENT', payload: { loanId, repaymentId, newGbpAmount: gbp } });
-    setEditingRepayment(null);
-    setEditAmount('');
+    setEditingRepayment(null); setEditAmount('');
   }
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-zinc-900 border-zinc-800"><CardContent className="p-4"><p className="text-xs text-zinc-500">Total Borrowed</p><p className="text-lg font-bold text-blue-400">{fmt(totalBorrowed, 'INR')}</p></CardContent></Card>
-        <Card className="bg-zinc-900 border-zinc-800"><CardContent className="p-4"><p className="text-xs text-zinc-500">Total Paid (INR)</p><p className="text-lg font-bold text-emerald-400">{fmt(totalPaid, 'INR')}</p></CardContent></Card>
-        <Card className="bg-zinc-900 border-zinc-800"><CardContent className="p-4"><p className="text-xs text-zinc-500">Total Paid (GBP)</p><p className="text-lg font-bold text-emerald-400">{fmtGBP(totalGbpPaid)}</p></CardContent></Card>
-        <Card className="bg-zinc-900 border-zinc-800"><CardContent className="p-4"><p className="text-xs text-zinc-500">Outstanding</p><p className="text-lg font-bold text-amber-400">{fmt(totalOwed, 'INR')}</p></CardContent></Card>
+    <div>
+      {/* Stats */}
+      <div className="hf-stat-grid">
+        <div className="hf-stat-card">
+          <div className="hf-stat-card-header"><span className="hf-stat-card-label">Total Borrowed</span><span className="hf-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#5A8FAE" strokeWidth="2" width="16" height="16"><rect x="2" y="7" width="20" height="14" rx="0"/><path d="M16 3H8L2 7h20l-6-4z"/></svg></span></div>
+          <div className="hf-stat-value blue">{fmtINR(totalBorrowed)}</div>
+        </div>
+        <div className="hf-stat-card">
+          <div className="hf-stat-card-header"><span className="hf-stat-card-label">Total Paid (INR)</span><span className="hf-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#5A9E6F" strokeWidth="2" width="16" height="16"><path d="M7 3l-4 4 4 4"/><path d="M3 7h18"/></svg></span></div>
+          <div className="hf-stat-value green">{fmtINR(totalPaid)}</div>
+        </div>
+        <div className="hf-stat-card">
+          <div className="hf-stat-card-header"><span className="hf-stat-card-label">Total Paid (GBP)</span><span className="hf-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#5A9E6F" strokeWidth="2" width="16" height="16"><path d="M7 3l-4 4 4 4"/><path d="M3 7h18"/></svg></span></div>
+          <div className="hf-stat-value green">{fmtGBP(totalGbpPaid)}</div>
+        </div>
+        <div className="hf-stat-card">
+          <div className="hf-stat-card-header"><span className="hf-stat-card-label">Outstanding</span><span className="hf-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#C9973A" strokeWidth="2" width="16" height="16"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span></div>
+          <div className="hf-stat-value amber">{fmtINR(totalOwed)}</div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <Card className="bg-zinc-900 border-zinc-800"><CardContent className="p-4"><p className="text-xs text-zinc-500">Total Utilized (Spent)</p><p className="text-lg font-bold text-red-400">{fmtINR(totalUtilized)}</p></CardContent></Card>
-        <Card className="bg-zinc-900 border-zinc-800"><CardContent className="p-4"><p className="text-xs text-zinc-500">Remaining Funds</p><p className="text-lg font-bold text-emerald-400">{fmtINR(Math.max(0, totalRemainingFunds))}</p></CardContent></Card>
+      <div className="hf-stat-grid cols-2" style={{ marginBottom: '20px' }}>
+        <div className="hf-stat-card">
+          <div className="hf-stat-card-header"><span className="hf-stat-card-label">Total Utilized (Spent)</span><span className="hf-stat-icon"><Plus size={16} style={{ color: '#B03030', transform: 'rotate(45deg)' }} /></span></div>
+          <div className="hf-stat-value red">{fmtINR(totalUtilized)}</div>
+        </div>
+        <div className="hf-stat-card">
+          <div className="hf-stat-card-header"><span className="hf-stat-card-label">Remaining Funds</span><span className="hf-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#5A9E6F" strokeWidth="2" width="16" height="16"><path d="M7 3l-4 4 4 4"/><path d="M3 7h18"/></svg></span></div>
+          <div className="hf-stat-value green">{fmtINR(Math.max(0, totalRemainingFunds))}</div>
+        </div>
       </div>
 
       {totalInterest > 0 && (
-        <Card className="bg-zinc-900 border-zinc-800 border-l-4 border-l-amber-500">
-          <CardContent className="p-4"><p className="text-xs text-zinc-500">Total Interest Accrued</p><p className="text-lg font-bold text-amber-400">{fmtINR(totalInterest)}</p></CardContent>
-        </Card>
+        <div className="hf-panel" style={{ marginBottom: '20px', borderLeft: '2px solid #C9973A' }}>
+          <div className="hf-stat-card-label">Total Interest Accrued</div>
+          <div className="hf-stat-value amber">{fmtINR(totalInterest)}</div>
+        </div>
       )}
 
-      <Card className="bg-zinc-900 border-zinc-800 border-l-4 border-l-blue-500">
-        <CardContent className="p-4 text-xs text-zinc-400 leading-relaxed">
-          <strong className="text-zinc-200">Loan Utilization:</strong> Track how much of your borrowed funds you've used (e.g., university fees). <strong>Remaining Funds</strong> shows what's still available. <strong>Outstanding</strong> is what you owe to repay.
+      <div className="hf-panel" style={{ marginBottom: '20px', borderLeft: '2px solid #5A8FAE' }}>
+        <div style={{ fontSize: '12px', color: 'var(--muted)', lineHeight: 1.6 }}>
+          <strong style={{ color: 'var(--text)' }}>Loan Utilization:</strong> Track how much of your borrowed funds you've used (e.g., university fees). <strong style={{ color: 'var(--text)' }}>Remaining Funds</strong> shows what's still available. <strong style={{ color: 'var(--text)' }}>Outstanding</strong> is what you owe to repay.
           <br /><br />
-          <strong className="text-zinc-200">Cross-Currency Repayment:</strong> Loans are tracked in INR. When you repay in GBP, it's auto-converted (1 GBP = {state.exchangeRate} INR). {totalInterest > 0 ? 'Interest is calculated on outstanding principal — repayments first cover interest, then principal.' : ''}
-        </CardContent>
-      </Card>
+          <strong style={{ color: 'var(--text)' }}>Cross-Currency Repayment:</strong> Loans are tracked in INR. When you repay in GBP, it's auto-converted (1 GBP = {state.exchangeRate} INR). {totalInterest > 0 ? 'Interest is calculated on outstanding principal — repayments first cover interest, then principal.' : ''}
+        </div>
+      </div>
 
-      <Card className="bg-zinc-900 border-zinc-800">
-        <CardHeader><CardTitle className="text-sm font-semibold text-zinc-200">Record Borrowed Money <span className="text-zinc-500 font-normal text-xs">in INR</span></CardTitle></CardHeader>
-        <CardContent className="space-y-3">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <Input placeholder="Borrowed from (name)" value={person} onChange={(e) => setPerson(e.target.value)} className="bg-zinc-800 border-zinc-700 text-zinc-200" />
-            <Input type="number" placeholder="Amount (₹ INR)" value={amount} onChange={(e) => setAmount(e.target.value)} min="0" step="0.01" className="bg-zinc-800 border-zinc-700 text-zinc-200" />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="bg-zinc-800 border-zinc-700 text-zinc-200" />
-            <Input placeholder="Reason (optional)" value={note} onChange={(e) => setNote(e.target.value)} className="bg-zinc-800 border-zinc-700 text-zinc-200" />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <Input type="number" placeholder="Interest rate % (e.g. 5)" value={interestRate} onChange={(e) => setInterestRate(e.target.value)} min="0" step="0.1" className="bg-zinc-800 border-zinc-700 text-zinc-200" />
-            <select value={interestType} onChange={(e) => setInterestType(e.target.value as 'simple' | 'compound')} className="bg-zinc-800 border-zinc-700 text-zinc-200 rounded-md px-3 py-2 text-sm">
+      {/* Add Form */}
+      <div className="hf-panel" style={{ marginBottom: '20px' }}>
+        <div className="hf-section-title" style={{ marginBottom: '16px' }}>Record Borrowed Money <span style={{ fontWeight: 400, color: 'var(--muted)', fontSize: '11px' }}>in INR</span></div>
+        <div className="hf-form-grid">
+          <div className="hf-form-field"><label className="hf-form-label">Borrowed from</label><input type="text" placeholder="Name" value={person} onChange={(e) => setPerson(e.target.value)} /></div>
+          <div className="hf-form-field"><label className="hf-form-label">Amount (₹ INR)</label><input type="number" placeholder="0.00" min="0" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} /></div>
+          <div className="hf-form-field"><label className="hf-form-label">Date</label><input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
+          <div className="hf-form-field"><label className="hf-form-label">Reason (optional)</label><input type="text" placeholder="Note" value={note} onChange={(e) => setNote(e.target.value)} /></div>
+          <div className="hf-form-field"><label className="hf-form-label">Interest rate %</label><input type="number" placeholder="e.g. 5" min="0" step="0.1" value={interestRate} onChange={(e) => setInterestRate(e.target.value)} /></div>
+          <div className="hf-form-field">
+            <label className="hf-form-label">Interest Type</label>
+            <select value={interestType} onChange={(e) => setInterestType(e.target.value as 'simple' | 'compound')}>
               <option value="simple">Simple Interest</option>
               <option value="compound">Compound (Monthly)</option>
             </select>
           </div>
-          <Button onClick={handleAdd} className="bg-zinc-100 text-zinc-900 hover:bg-white rounded-full"><Plus size={16} className="mr-1" /> Add Loan</Button>
-        </CardContent>
-      </Card>
-
-      <div className="space-y-4">
-        {loans.length === 0 ? (
-          <Card className="bg-zinc-900 border-zinc-800 border-dashed"><CardContent className="p-8 text-center text-sm text-zinc-500">No borrowed money recorded</CardContent></Card>
-        ) : (
-          [...loans].reverse().map((loan) => <LoanCard key={loan.id} loan={loan} state={state} dispatch={dispatch} handleRepay={handleRepay} editingRepayment={editingRepayment} setEditingRepayment={setEditingRepayment} editAmount={editAmount} setEditAmount={setEditAmount} onEditSave={handleEditSave} />)
-        )}
+        </div>
+        <button className="hf-btn" onClick={handleAdd}><Plus size={14} strokeWidth={2.5} /> Add Loan</button>
       </div>
+
+      {/* Loan Cards */}
+      {loans.length === 0 ? (
+        <div className="hf-panel">
+          <div className="hf-empty">No borrowed money recorded</div>
+        </div>
+      ) : (
+        [...loans].reverse().map((loan) => (
+          <LoanCard key={loan.id} loan={loan} state={state} dispatch={dispatch} handleRepay={handleRepay} editingRepayment={editingRepayment} setEditingRepayment={setEditingRepayment} editAmount={editAmount} setEditAmount={setEditAmount} onEditSave={handleEditSave} />
+        ))
+      )}
     </div>
   );
 }
 
 function LoanCard({ loan, state, dispatch, handleRepay, editingRepayment, setEditingRepayment, editAmount, setEditAmount, onEditSave }: {
-  loan: Loan;
-  state: any;
-  dispatch: any;
-  handleRepay: (loanId: string, gbpVal: string) => void;
-  editingRepayment: { loanId: string; repaymentId: string } | null;
-  setEditingRepayment: (v: any) => void;
-  editAmount: string;
-  setEditAmount: (v: string) => void;
-  onEditSave: (loanId: string, repaymentId: string) => void;
+  loan: Loan; state: any; dispatch: any; handleRepay: (loanId: string, gbpVal: string) => void;
+  editingRepayment: { loanId: string; repaymentId: string } | null; setEditingRepayment: (v: any) => void;
+  editAmount: string; setEditAmount: (v: string) => void; onEditSave: (loanId: string, repaymentId: string) => void;
 }) {
   const s = calculateLoanWithInterest(loan, state.exchangeRate);
   const [repayAmount, setRepayAmount] = useState('');
@@ -148,123 +143,128 @@ function LoanCard({ loan, state, dispatch, handleRepay, editingRepayment, setEdi
   const [utilDate, setUtilDate] = useState(today());
 
   return (
-    <Card className="bg-zinc-900 border-zinc-800">
-      <CardContent className="p-5 space-y-4">
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 flex-wrap mb-1">
-              <p className="text-sm font-semibold text-zinc-200">{loan.person}</p>
-              <Badge className={`text-xs ${s.status === 'paid' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : s.status === 'partial' ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' : 'bg-red-500/10 text-red-400 border-red-500/30'}`}>{s.statusLabel}</Badge>
-              {s.hasInterest && <Badge className="text-xs bg-amber-500/10 text-amber-400 border-amber-500/30">{loan.interestRate}% {loan.interestType === 'compound' ? 'CMP' : 'SIM'}</Badge>}
-            </div>
-            <p className="text-xs text-zinc-500">{loan.note ? loan.note + ' · ' : ''}Borrowed on {loan.date}</p>
+    <div className="hf-panel" style={{ marginBottom: '12px' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', marginBottom: '16px' }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
+            <span style={{ fontFamily: 'var(--font-head)', fontSize: '14px', fontWeight: 600, color: 'var(--text)' }}>{loan.person}</span>
+            <span className={`hf-tag ${s.status === 'paid' ? 'hf-tag-income' : s.status === 'partial' ? 'hf-tag-neutral' : 'hf-tag-expense'}`} style={{ fontSize: '9px', padding: '2px 6px' }}>{s.statusLabel}</span>
+            {s.hasInterest && <span className="hf-tag hf-tag-neutral" style={{ fontSize: '9px', padding: '2px 6px' }}>{loan.interestRate}% {loan.interestType === 'compound' ? 'CMP' : 'SIM'}</span>}
           </div>
-          <div className="text-right">
-            <p className="text-sm font-bold text-blue-400">{fmtINR(s.hasInterest ? s.totalOwed : Number(loan.amount))}</p>
-            <p className="text-xs text-zinc-500">Paid: {fmtINR(s.totalPaid)} ({fmtGBP(s.gbpPaid)})</p>
-          </div>
-          <Button size="icon" variant="ghost" className="h-8 w-8 text-red-400 hover:bg-red-500/10 shrink-0" onClick={() => dispatch({ type: 'DELETE_LOAN', payload: loan.id })}><Trash2 size={14} /></Button>
+          <div className="hf-tx-meta">{loan.note ? loan.note + ' · ' : ''}Borrowed on {loan.date}</div>
         </div>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '14px', fontWeight: 700, color: '#5A8FAE' }}>{fmtINR(s.hasInterest ? s.totalOwed : Number(loan.amount))}</div>
+          <div className="hf-tx-meta">Paid: {fmtINR(s.totalPaid)} ({fmtGBP(s.gbpPaid)})</div>
+        </div>
+        <button className="hf-tx-delete" onClick={() => dispatch({ type: 'DELETE_LOAN', payload: loan.id })}><Trash2 size={13} /></button>
+      </div>
 
-        {s.hasInterest && (
-          <div className="bg-zinc-950 border border-dashed border-zinc-800 rounded-xl p-4 space-y-1 text-sm">
-            <div className="flex justify-between"><span className="text-zinc-500">Original Principal</span><span className="text-zinc-200 font-medium">{fmtINR(s.originalPrincipal)}</span></div>
-            <div className="flex justify-between"><span className="text-zinc-500">Principal Paid</span><span className="text-emerald-400 font-medium">{fmtINR(s.principalPaid)}</span></div>
-            <div className="flex justify-between"><span className="text-zinc-500">Principal Remaining</span><span className="text-zinc-200 font-medium">{fmtINR(s.principalRemaining)}</span></div>
-            <div className="flex justify-between"><span className="text-zinc-500">Interest Accrued</span><span className="text-amber-400 font-medium">{fmtINR(s.interestAccrued)}</span></div>
-            <div className="flex justify-between"><span className="text-zinc-500">Interest Paid</span><span className="text-emerald-400 font-medium">{fmtINR(s.interestPaid)}</span></div>
-            {s.interestUnpaid > 0 && <div className="flex justify-between"><span className="text-zinc-500">Interest Unpaid</span><span className="text-red-400 font-medium">{fmtINR(s.interestUnpaid)}</span></div>}
-            <div className="flex justify-between border-t border-dashed border-zinc-800 pt-2 mt-2"><span className="text-zinc-200 font-semibold">Total Owed</span><span className={`font-bold ${s.totalOwed > s.principalRemaining ? 'text-amber-400' : 'text-blue-400'}`}>{fmtINR(s.totalOwed)}</span></div>
+      {s.hasInterest && (
+        <div style={{ background: 'var(--surface2)', border: '1px solid var(--border)', padding: '16px', marginBottom: '16px', fontSize: '13px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}><span style={{ color: 'var(--muted)' }}>Original Principal</span><span style={{ color: 'var(--text)', fontWeight: 500 }}>{fmtINR(s.originalPrincipal)}</span></div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}><span style={{ color: 'var(--muted)' }}>Principal Paid</span><span style={{ color: '#5A9E6F', fontWeight: 500 }}>{fmtINR(s.principalPaid)}</span></div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}><span style={{ color: 'var(--muted)' }}>Principal Remaining</span><span style={{ color: 'var(--text)', fontWeight: 500 }}>{fmtINR(s.principalRemaining)}</span></div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}><span style={{ color: 'var(--muted)' }}>Interest Accrued</span><span style={{ color: '#C9973A', fontWeight: 500 }}>{fmtINR(s.interestAccrued)}</span></div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}><span style={{ color: 'var(--muted)' }}>Interest Paid</span><span style={{ color: '#5A9E6F', fontWeight: 500 }}>{fmtINR(s.interestPaid)}</span></div>
+          {s.interestUnpaid > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}><span style={{ color: 'var(--muted)' }}>Interest Unpaid</span><span style={{ color: 'var(--red)', fontWeight: 500 }}>{fmtINR(s.interestUnpaid)}</span></div>}
+          <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px dashed var(--border)', paddingTop: '8px', marginTop: '8px' }}>
+            <span style={{ color: 'var(--text)', fontWeight: 600 }}>Total Owed</span>
+            <span style={{ fontWeight: 700, color: s.totalOwed > s.principalRemaining ? '#C9973A' : '#5A8FAE' }}>{fmtINR(s.totalOwed)}</span>
           </div>
-        )}
+        </div>
+      )}
 
-        <Progress value={s.pct} className="h-2 bg-zinc-800" />
+      <div className="hf-progress-bar-bg" style={{ marginBottom: '16px' }}>
+        <div className="hf-progress-bar-fill green" style={{ width: `${s.pct}%` }} />
+      </div>
 
-        {s.totalOwed > 0.01 && (
-          <div className="flex items-center gap-2">
-            <Input type="number" placeholder="Pay in GBP (£)" value={repayAmount} onChange={(e) => setRepayAmount(e.target.value)} min="0" step="0.01" className="bg-zinc-800 border-zinc-700 text-zinc-200 text-sm" />
-            <Button size="sm" className="bg-zinc-100 text-zinc-900 hover:bg-white rounded-full text-xs" onClick={() => { handleRepay(loan.id, repayAmount); setRepayAmount(''); }}>Repay GBP</Button>
+      {s.totalOwed > 0.01 && (
+        <>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+            <input type="number" placeholder="Pay in GBP (£)" value={repayAmount} onChange={(e) => setRepayAmount(e.target.value)} min="0" step="0.01" style={{ maxWidth: '160px' }} />
+            <button className="hf-btn" style={{ padding: '8px 14px', fontSize: '12px' }} onClick={() => { handleRepay(loan.id, repayAmount); setRepayAmount(''); }}>Repay GBP</button>
           </div>
-        )}
-        {s.totalOwed > 0.01 && <p className="text-xs text-zinc-500">Total owed: {fmtINR(s.totalOwed)} ≈ {fmtGBP(s.remainingGBP)}{s.hasInterest ? ` (Principal: ${fmtINR(s.principalRemaining)} + Interest: ${fmtINR(s.interestUnpaid)})` : ''}</p>}
+          <div className="hf-tx-meta" style={{ marginBottom: '16px' }}>Total owed: {fmtINR(s.totalOwed)} ≈ {fmtGBP(s.remainingGBP)}{s.hasInterest ? ` (Principal: ${fmtINR(s.principalRemaining)} + Interest: ${fmtINR(s.interestUnpaid)})` : ''}</div>
+        </>
+      )}
 
-        {loan.repayments.length > 0 && (
-          <div className="border-t border-zinc-800 pt-4">
-            <p className="text-xs font-semibold text-zinc-300 mb-2">Repayment History <span className="bg-zinc-800 px-2 py-0.5 rounded-full text-zinc-500 text-[10px]">{loan.repayments.length}</span></p>
-            <div className="space-y-2">
-              {[...loan.repayments].reverse().map((r) => {
-                const isEditing = editingRepayment?.loanId === loan.id && editingRepayment?.repaymentId === r.id;
-                if (isEditing) {
-                  return (
-                    <div key={r.id} className="flex items-center gap-2 text-sm">
-                      <span className="text-zinc-500 w-24 shrink-0">{r.date}</span>
-                      <span className="text-zinc-500">£</span>
-                      <Input type="number" value={editAmount} onChange={(e) => setEditAmount(e.target.value)} className="bg-zinc-800 border-zinc-700 text-zinc-200 w-24 text-sm h-8" />
-                      <Button size="icon" variant="ghost" className="h-7 w-7 text-emerald-400" onClick={() => onEditSave(loan.id, r.id)}><Check size={14} /></Button>
-                      <Button size="icon" variant="ghost" className="h-7 w-7 text-zinc-400" onClick={() => setEditingRepayment(null)}><X size={14} /></Button>
-                    </div>
-                  );
-                }
-                return (
-                  <div key={r.id} className="flex items-center justify-between text-sm py-1 border-b border-dashed border-zinc-800 last:border-0">
-                    <div className="flex items-center gap-3">
-                      <span className="text-zinc-500 w-24">{r.date}</span>
-                      <span className="text-zinc-200 font-medium">{fmtGBP(r.gbpAmount)}</span>
-                      <span className="text-zinc-500 text-xs">({fmtINR(r.inrAmount)})</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Button size="icon" variant="ghost" className="h-7 w-7 text-zinc-400 hover:text-zinc-200" onClick={() => { setEditingRepayment({ loanId: loan.id, repaymentId: r.id }); setEditAmount(String(r.gbpAmount)); }}><Pencil size={12} /></Button>
-                      <Button size="icon" variant="ghost" className="h-7 w-7 text-red-400 hover:bg-red-500/10" onClick={() => dispatch({ type: 'DELETE_REPAYMENT', payload: { loanId: loan.id, repaymentId: r.id } })}><Trash2 size={12} /></Button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        <div className="border-t border-zinc-800 pt-4">
-          <p className="text-xs font-semibold text-zinc-300 mb-2">Loan Utilization <span className="bg-zinc-800 px-2 py-0.5 rounded-full text-zinc-500 text-[10px]">{loan.utilizations.length} payments</span></p>
-          <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-3 mb-3">
-            <div className="flex justify-between text-xs text-zinc-500 mb-1">
-              <span>Utilized: {fmtINR(s.totalUtilizedINR)} ({s.utilizedPct}%)</span>
-              <span>Remaining: {fmtINR(Math.max(0, s.remainingFundsINR))} ({Math.max(0, 100 - s.utilizedPct)}%)</span>
-            </div>
-            <Progress value={s.utilizedPct} className="h-2 bg-zinc-800" />
-          </div>
-          {loan.utilizations.length > 0 && (
-            <div className="space-y-2 mb-3">
-              {[...loan.utilizations].reverse().map((u) => (
-                <div key={u.id} className="flex items-center justify-between text-sm py-1 border-b border-dashed border-zinc-800 last:border-0">
-                  <div className="flex items-center gap-3">
-                    <span className="text-zinc-500 w-24">{u.date}</span>
-                    <span className="text-zinc-200 font-medium">{u.description}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-zinc-200 font-medium">{fmtGBP(u.gbpAmount)}</span>
-                    <span className="text-zinc-500 text-xs">({fmtINR(u.inrAmount)})</span>
-                    <Button size="icon" variant="ghost" className="h-7 w-7 text-red-400 hover:bg-red-500/10" onClick={() => dispatch({ type: 'DELETE_UTILIZATION', payload: { loanId: loan.id, utilId: u.id } })}><Trash2 size={12} /></Button>
-                  </div>
+      {loan.repayments.length > 0 && (
+        <div style={{ borderTop: '1px solid var(--border)', paddingTop: '16px', marginBottom: '16px' }}>
+          <div className="hf-section-title" style={{ fontSize: '12px', marginBottom: '12px' }}>Repayment History <span className="hf-section-count">{loan.repayments.length}</span></div>
+          {[...loan.repayments].reverse().map((r) => {
+            const isEditing = editingRepayment?.loanId === loan.id && editingRepayment?.repaymentId === r.id;
+            if (isEditing) {
+              return (
+                <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', marginBottom: '6px' }}>
+                  <span style={{ color: 'var(--muted)', width: '90px', flexShrink: 0 }}>{r.date}</span>
+                  <span style={{ color: 'var(--muted)' }}>£</span>
+                  <input type="number" value={editAmount} onChange={(e) => setEditAmount(e.target.value)} style={{ width: '90px' }} />
+                  <button className="hf-tx-delete" style={{ color: '#5A9E6F' }} onClick={() => onEditSave(loan.id, r.id)}><Check size={14} /></button>
+                  <button className="hf-tx-delete" onClick={() => setEditingRepayment(null)}><X size={14} /></button>
                 </div>
-              ))}
-            </div>
-          )}
-          <div className="flex flex-wrap items-center gap-2">
-            <Input placeholder="Description (e.g. University fee)" value={utilDesc} onChange={(e) => setUtilDesc(e.target.value)} className="bg-zinc-800 border-zinc-700 text-zinc-200 text-sm flex-1 min-w-[120px]" />
-            <Input type="number" placeholder="Amount GBP" value={utilAmount} onChange={(e) => setUtilAmount(e.target.value)} className="bg-zinc-800 border-zinc-700 text-zinc-200 text-sm w-28" />
-            <Input type="date" value={utilDate} onChange={(e) => setUtilDate(e.target.value)} className="bg-zinc-800 border-zinc-700 text-zinc-200 text-sm w-36" />
-            <Button size="sm" className="bg-zinc-100 text-zinc-900 hover:bg-white rounded-full text-xs" onClick={() => {
-              const gbp = parseFloat(utilAmount);
-              if (!utilDesc.trim() || !gbp || gbp <= 0) return alert('Enter description and valid GBP amount');
-              const currentUtilized = loan.utilizations.reduce((sum: number, u: any) => sum + Number(u.inrAmount), 0);
-              const inrAmount = gbp * state.exchangeRate;
-              if (currentUtilized + inrAmount > Number(loan.amount)) return alert(`This exceeds the loan amount. Remaining: ${fmtINR(Number(loan.amount) - currentUtilized)}`);
-              dispatch({ type: 'ADD_UTILIZATION', payload: { loanId: loan.id, description: utilDesc.trim(), gbpAmount: gbp, date: utilDate } });
-              setUtilDesc(''); setUtilAmount(''); setUtilDate(today());
-            }}>Record</Button>
+              );
+            }
+            return (
+              <div key={r.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '13px', padding: '6px 0', borderBottom: '1px dashed var(--border)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <span style={{ color: 'var(--muted)', width: '90px' }}>{r.date}</span>
+                  <span style={{ color: 'var(--text)', fontWeight: 500 }}>{fmtGBP(r.gbpAmount)}</span>
+                  <span className="hf-tx-meta">({fmtINR(r.inrAmount)})</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <button className="hf-tx-delete" onClick={() => { setEditingRepayment({ loanId: loan.id, repaymentId: r.id }); setEditAmount(String(r.gbpAmount)); }}><Pencil size={12} /></button>
+                  <button className="hf-tx-delete" onClick={() => dispatch({ type: 'DELETE_REPAYMENT', payload: { loanId: loan.id, repaymentId: r.id } })}><Trash2 size={12} /></button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <div style={{ borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
+        <div className="hf-section-title" style={{ fontSize: '12px', marginBottom: '12px' }}>Loan Utilization <span className="hf-section-count">{loan.utilizations.length} payments</span></div>
+        <div style={{ background: 'var(--surface2)', border: '1px solid var(--border)', padding: '12px', marginBottom: '12px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--muted)', marginBottom: '4px' }}>
+            <span>Utilized: {fmtINR(s.totalUtilizedINR)} ({s.utilizedPct}%)</span>
+            <span>Remaining: {fmtINR(Math.max(0, s.remainingFundsINR))} ({Math.max(0, 100 - s.utilizedPct)}%)</span>
+          </div>
+          <div className="hf-progress-bar-bg">
+            <div className="hf-progress-bar-fill amber" style={{ width: `${s.utilizedPct}%` }} />
           </div>
         </div>
-      </CardContent>
-    </Card>
+        {loan.utilizations.length > 0 && (
+          <div style={{ marginBottom: '12px' }}>
+            {[...loan.utilizations].reverse().map((u) => (
+              <div key={u.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '13px', padding: '6px 0', borderBottom: '1px dashed var(--border)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <span style={{ color: 'var(--muted)', width: '90px' }}>{u.date}</span>
+                  <span style={{ color: 'var(--text)', fontWeight: 500 }}>{u.description}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ color: 'var(--text)', fontWeight: 500 }}>{fmtGBP(u.gbpAmount)}</span>
+                  <span className="hf-tx-meta">({fmtINR(u.inrAmount)})</span>
+                  <button className="hf-tx-delete" onClick={() => dispatch({ type: 'DELETE_UTILIZATION', payload: { loanId: loan.id, utilId: u.id } })}><Trash2 size={12} /></button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '10px' }}>
+          <input placeholder="Description (e.g. University fee)" value={utilDesc} onChange={(e) => setUtilDesc(e.target.value)} style={{ flex: 1, minWidth: '120px' }} />
+          <input type="number" placeholder="Amount GBP" value={utilAmount} onChange={(e) => setUtilAmount(e.target.value)} style={{ width: '110px' }} />
+          <input type="date" value={utilDate} onChange={(e) => setUtilDate(e.target.value)} style={{ width: '130px' }} />
+          <button className="hf-btn" style={{ padding: '8px 14px', fontSize: '12px' }} onClick={() => {
+            const gbp = parseFloat(utilAmount);
+            if (!utilDesc.trim() || !gbp || gbp <= 0) return alert('Enter description and valid GBP amount');
+            const currentUtilized = loan.utilizations.reduce((sum: number, u: any) => sum + Number(u.inrAmount), 0);
+            const inrAmount = gbp * state.exchangeRate;
+            if (currentUtilized + inrAmount > Number(loan.amount)) return alert(`This exceeds the loan amount. Remaining: ${fmtINR(Number(loan.amount) - currentUtilized)}`);
+            dispatch({ type: 'ADD_UTILIZATION', payload: { loanId: loan.id, description: utilDesc.trim(), gbpAmount: gbp, date: utilDate } });
+            setUtilDesc(''); setUtilAmount(''); setUtilDate(today());
+          }}>Record</button>
+        </div>
+      </div>
+    </div>
   );
 }

@@ -1,9 +1,4 @@
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { Trash2, Plus, Pencil, X, Check } from 'lucide-react';
 import { useFinance } from '@/context/FinanceContext';
 import { fmt, fmtGBP, fmtINR, today, getDebtSummary } from '@/lib/finance';
@@ -30,9 +25,7 @@ export default function DebtsPage() {
     if (!person.trim()) return alert('Enter the person name');
     if (!val || val <= 0) return alert('Enter a valid amount');
     dispatch({ type: 'ADD_DEBT', payload: { person: person.trim(), amount: val, date, note: note.trim(), currency: state.currency, repayments: [] } });
-    setPerson('');
-    setAmount('');
-    setNote('');
+    setPerson(''); setAmount(''); setNote('');
   }
 
   function handleRepay(debtId: string, gbpVal: string) {
@@ -46,117 +39,123 @@ export default function DebtsPage() {
     const gbp = parseFloat(editAmount);
     if (!gbp || gbp <= 0) return alert('Enter a valid GBP amount');
     dispatch({ type: 'EDIT_DEBT_REPAYMENT', payload: { debtId, repaymentId, newGbpAmount: gbp } });
-    setEditingRepayment(null);
-    setEditAmount('');
+    setEditingRepayment(null); setEditAmount('');
   }
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-zinc-900 border-zinc-800"><CardContent className="p-4"><p className="text-xs text-zinc-500">Total Owed</p><p className="text-lg font-bold text-red-400">{fmt(totalOwed, 'INR')}</p></CardContent></Card>
-        <Card className="bg-zinc-900 border-zinc-800"><CardContent className="p-4"><p className="text-xs text-zinc-500">Total Paid (INR)</p><p className="text-lg font-bold text-emerald-400">{fmt(totalPaid, 'INR')}</p></CardContent></Card>
-        <Card className="bg-zinc-900 border-zinc-800"><CardContent className="p-4"><p className="text-xs text-zinc-500">Total Paid (GBP)</p><p className="text-lg font-bold text-emerald-400">{fmtGBP(totalGbpPaid)}</p></CardContent></Card>
-        <Card className="bg-zinc-900 border-zinc-800"><CardContent className="p-4"><p className="text-xs text-zinc-500">Remaining</p><p className="text-lg font-bold text-amber-400">{fmt(remaining, 'INR')}</p></CardContent></Card>
+    <div>
+      {/* Stats */}
+      <div className="hf-stat-grid">
+        <div className="hf-stat-card">
+          <div className="hf-stat-card-header"><span className="hf-stat-card-label">Total Owed</span><span className="hf-stat-icon"><Plus size={16} style={{ color: '#B03030', transform: 'rotate(45deg)' }} /></span></div>
+          <div className="hf-stat-value red">{fmt(totalOwed, 'INR')}</div>
+        </div>
+        <div className="hf-stat-card">
+          <div className="hf-stat-card-header"><span className="hf-stat-card-label">Total Paid (INR)</span><span className="hf-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#5A9E6F" strokeWidth="2" width="16" height="16"><path d="M7 3l-4 4 4 4"/><path d="M3 7h18"/></svg></span></div>
+          <div className="hf-stat-value green">{fmt(totalPaid, 'INR')}</div>
+        </div>
+        <div className="hf-stat-card">
+          <div className="hf-stat-card-header"><span className="hf-stat-card-label">Total Paid (GBP)</span><span className="hf-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#5A9E6F" strokeWidth="2" width="16" height="16"><path d="M7 3l-4 4 4 4"/><path d="M3 7h18"/></svg></span></div>
+          <div className="hf-stat-value green">{fmtGBP(totalGbpPaid)}</div>
+        </div>
+        <div className="hf-stat-card">
+          <div className="hf-stat-card-header"><span className="hf-stat-card-label">Remaining</span><span className="hf-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#C9973A" strokeWidth="2" width="16" height="16"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span></div>
+          <div className="hf-stat-value amber">{fmt(remaining, 'INR')}</div>
+        </div>
       </div>
 
-      <Card className="bg-zinc-900 border-zinc-800 border-l-4 border-l-red-500">
-        <CardContent className="p-4 text-xs text-zinc-400 leading-relaxed">
-          <strong className="text-zinc-200">Cross-Currency Repayment:</strong> Your debts are tracked in INR. When you pay in GBP, it's automatically converted (1 GBP = {state.exchangeRate} INR).
-        </CardContent>
-      </Card>
+      <div className="hf-panel" style={{ marginBottom: '20px', borderLeft: '2px solid var(--red)' }}>
+        <div style={{ fontSize: '12px', color: 'var(--muted)', lineHeight: 1.6 }}>
+          <strong style={{ color: 'var(--text)' }}>Cross-Currency Repayment:</strong> Your debts are tracked in INR. When you pay in GBP, it's automatically converted (1 GBP = {state.exchangeRate} INR).
+        </div>
+      </div>
 
-      <Card className="bg-zinc-900 border-zinc-800">
-        <CardHeader><CardTitle className="text-sm font-semibold text-zinc-200">Record Debt <span className="text-zinc-500 font-normal text-xs">in INR</span></CardTitle></CardHeader>
-        <CardContent className="space-y-3">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <Input placeholder="Owed to (name)" value={person} onChange={(e) => setPerson(e.target.value)} className="bg-zinc-800 border-zinc-700 text-zinc-200" />
-            <Input type="number" placeholder="Amount (₹ INR)" value={amount} onChange={(e) => setAmount(e.target.value)} min="0" step="0.01" className="bg-zinc-800 border-zinc-700 text-zinc-200" />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="bg-zinc-800 border-zinc-700 text-zinc-200" />
-            <Input placeholder="Reason (optional)" value={note} onChange={(e) => setNote(e.target.value)} className="bg-zinc-800 border-zinc-700 text-zinc-200" />
-          </div>
-          <Button onClick={handleAdd} className="bg-zinc-100 text-zinc-900 hover:bg-white rounded-full"><Plus size={16} className="mr-1" /> Add Debt</Button>
-        </CardContent>
-      </Card>
+      {/* Add Form */}
+      <div className="hf-panel" style={{ marginBottom: '20px' }}>
+        <div className="hf-section-title" style={{ marginBottom: '16px' }}>Record Debt <span style={{ fontWeight: 400, color: 'var(--muted)', fontSize: '11px' }}>in INR</span></div>
+        <div className="hf-form-grid">
+          <div className="hf-form-field"><label className="hf-form-label">Owed to</label><input type="text" placeholder="Name" value={person} onChange={(e) => setPerson(e.target.value)} /></div>
+          <div className="hf-form-field"><label className="hf-form-label">Amount (₹ INR)</label><input type="number" placeholder="0.00" min="0" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} /></div>
+          <div className="hf-form-field"><label className="hf-form-label">Date</label><input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
+          <div className="hf-form-field"><label className="hf-form-label">Reason (optional)</label><input type="text" placeholder="Note" value={note} onChange={(e) => setNote(e.target.value)} /></div>
+        </div>
+        <button className="hf-btn" onClick={handleAdd}><Plus size={14} strokeWidth={2.5} /> Add Debt</button>
+      </div>
 
-      <div className="space-y-4">
-        {debts.length === 0 ? (
-          <Card className="bg-zinc-900 border-zinc-800 border-dashed"><CardContent className="p-8 text-center text-sm text-zinc-500">No debts recorded</CardContent></Card>
-        ) : (
-          [...debts].reverse().map((debt) => {
-            const ds = getDebtSummary(debt, state.exchangeRate);
-            const repayAmount = repayAmounts[debt.id] || '';
-            return (
-              <Card key={debt.id} className="bg-zinc-900 border-zinc-800">
-                <CardContent className="p-5 space-y-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 flex-wrap mb-1">
-                        <p className="text-sm font-semibold text-zinc-200">{debt.person}</p>
-                        <Badge className={`text-xs ${ds.status === 'paid' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : ds.status === 'partial' ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' : 'bg-red-500/10 text-red-400 border-red-500/30'}`}>{ds.statusLabel}</Badge>
-                      </div>
-                      <p className="text-xs text-zinc-500">{debt.note ? debt.note + ' · ' : ''}Owed on {debt.date}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-bold text-red-400">{fmt(debt.amount, 'INR')}</p>
-                      <p className="text-xs text-zinc-500">Paid: {fmt(ds.totalPaidINR, 'INR')} ({fmtGBP(ds.totalPaidGBP)})</p>
-                    </div>
-                    <Button size="icon" variant="ghost" className="h-8 w-8 text-red-400 hover:bg-red-500/10 shrink-0" onClick={() => dispatch({ type: 'DELETE_DEBT', payload: debt.id })}><Trash2 size={14} /></Button>
+      {/* Debt Cards */}
+      {debts.length === 0 ? (
+        <div className="hf-panel"><div className="hf-empty">No debts recorded</div></div>
+      ) : (
+        [...debts].reverse().map((debt) => {
+          const ds = getDebtSummary(debt, state.exchangeRate);
+          const repayAmount = repayAmounts[debt.id] || '';
+          return (
+            <div key={debt.id} className="hf-panel" style={{ marginBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', marginBottom: '16px' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
+                    <span style={{ fontFamily: 'var(--font-head)', fontSize: '14px', fontWeight: 600, color: 'var(--text)' }}>{debt.person}</span>
+                    <span className={`hf-tag ${ds.status === 'paid' ? 'hf-tag-income' : ds.status === 'partial' ? 'hf-tag-neutral' : 'hf-tag-expense'}`} style={{ fontSize: '9px', padding: '2px 6px' }}>{ds.statusLabel}</span>
                   </div>
+                  <div className="hf-tx-meta">{debt.note ? debt.note + ' · ' : ''}Owed on {debt.date}</div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: '14px', fontWeight: 700, color: 'var(--red)' }}>{fmt(debt.amount, 'INR')}</div>
+                  <div className="hf-tx-meta">Paid: {fmt(ds.totalPaidINR, 'INR')} ({fmtGBP(ds.totalPaidGBP)})</div>
+                </div>
+                <button className="hf-tx-delete" onClick={() => dispatch({ type: 'DELETE_DEBT', payload: debt.id })}><Trash2 size={13} /></button>
+              </div>
 
-                  <Progress value={ds.pct} className="h-2 bg-zinc-800" />
+              <div className="hf-progress-bar-bg" style={{ marginBottom: '16px' }}>
+                <div className="hf-progress-bar-fill green" style={{ width: `${ds.pct}%` }} />
+              </div>
 
-                  {ds.remaining > 0 && (
-                    <>
-                      <div className="flex items-center gap-2">
-                        <Input type="number" placeholder="Pay in GBP (£)" value={repayAmount} onChange={(e) => setRepayAmounts(prev => ({ ...prev, [debt.id]: e.target.value }))} min="0" step="0.01" className="bg-zinc-800 border-zinc-700 text-zinc-200 text-sm" />
-                        <Button size="sm" className="bg-zinc-100 text-zinc-900 hover:bg-white rounded-full text-xs" onClick={() => { handleRepay(debt.id, repayAmount); }}>Pay GBP</Button>
+              {ds.remaining > 0 && (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                    <input type="number" placeholder="Pay in GBP (£)" value={repayAmount} onChange={(e) => setRepayAmounts(prev => ({ ...prev, [debt.id]: e.target.value }))} min="0" step="0.01" style={{ maxWidth: '160px' }} />
+                    <button className="hf-btn" style={{ padding: '8px 14px', fontSize: '12px' }} onClick={() => handleRepay(debt.id, repayAmount)}>Pay GBP</button>
+                  </div>
+                  <div className="hf-tx-meta" style={{ marginBottom: '16px' }}>Remaining: {fmt(ds.remaining, 'INR')} ≈ {fmtGBP(ds.remainingGBP)}</div>
+                </>
+              )}
+
+              {debt.repayments.length > 0 && (
+                <div style={{ borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
+                  <div className="hf-section-title" style={{ fontSize: '12px', marginBottom: '12px' }}>Repayment History <span className="hf-section-count">{debt.repayments.length}</span></div>
+                  {[...debt.repayments].reverse().map((r) => {
+                    const isEditing = editingRepayment?.debtId === debt.id && editingRepayment?.repaymentId === r.id;
+                    if (isEditing) {
+                      return (
+                        <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', marginBottom: '6px' }}>
+                          <span style={{ color: 'var(--muted)', width: '90px', flexShrink: 0 }}>{r.date}</span>
+                          <span style={{ color: 'var(--muted)' }}>£</span>
+                          <input type="number" value={editAmount} onChange={(e) => setEditAmount(e.target.value)} style={{ width: '90px' }} />
+                          <button className="hf-tx-delete" style={{ color: '#5A9E6F' }} onClick={() => handleEditSave(debt.id, r.id)}><Check size={14} /></button>
+                          <button className="hf-tx-delete" onClick={() => setEditingRepayment(null)}><X size={14} /></button>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div key={r.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '13px', padding: '6px 0', borderBottom: '1px dashed var(--border)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <span style={{ color: 'var(--muted)', width: '90px' }}>{r.date}</span>
+                          <span style={{ color: 'var(--text)', fontWeight: 500 }}>{fmtGBP(r.gbpAmount)}</span>
+                          <span className="hf-tx-meta">({fmtINR(r.inrAmount)})</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <button className="hf-tx-delete" onClick={() => { setEditingRepayment({ debtId: debt.id, repaymentId: r.id }); setEditAmount(String(r.gbpAmount)); }}><Pencil size={12} /></button>
+                          <button className="hf-tx-delete" onClick={() => dispatch({ type: 'DELETE_DEBT_REPAYMENT', payload: { debtId: debt.id, repaymentId: r.id } })}><Trash2 size={12} /></button>
+                        </div>
                       </div>
-                      <p className="text-xs text-zinc-500">Remaining: {fmt(ds.remaining, 'INR')} ≈ {fmtGBP(ds.remainingGBP)}</p>
-                    </>
-                  )}
-
-                  {debt.repayments.length > 0 && (
-                    <div className="border-t border-zinc-800 pt-4">
-                      <p className="text-xs font-semibold text-zinc-300 mb-2">Repayment History <span className="bg-zinc-800 px-2 py-0.5 rounded-full text-zinc-500 text-[10px]">{debt.repayments.length}</span></p>
-                      <div className="space-y-2">
-                        {[...debt.repayments].reverse().map((r) => {
-                          const isEditing = editingRepayment?.debtId === debt.id && editingRepayment?.repaymentId === r.id;
-                          if (isEditing) {
-                            return (
-                              <div key={r.id} className="flex items-center gap-2 text-sm">
-                                <span className="text-zinc-500 w-24">{r.date}</span>
-                                <span className="text-zinc-500">£</span>
-                                <Input type="number" value={editAmount} onChange={(e) => setEditAmount(e.target.value)} className="bg-zinc-800 border-zinc-700 text-zinc-200 w-24 text-sm h-8" />
-                                <Button size="icon" variant="ghost" className="h-7 w-7 text-emerald-400" onClick={() => handleEditSave(debt.id, r.id)}><Check size={14} /></Button>
-                                <Button size="icon" variant="ghost" className="h-7 w-7 text-zinc-400" onClick={() => setEditingRepayment(null)}><X size={14} /></Button>
-                              </div>
-                            );
-                          }
-                          return (
-                            <div key={r.id} className="flex items-center justify-between text-sm py-1 border-b border-dashed border-zinc-800 last:border-0">
-                              <div className="flex items-center gap-3">
-                                <span className="text-zinc-500 w-24">{r.date}</span>
-                                <span className="text-zinc-200 font-medium">{fmtGBP(r.gbpAmount)}</span>
-                                <span className="text-zinc-500 text-xs">({fmtINR(r.inrAmount)})</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Button size="icon" variant="ghost" className="h-7 w-7 text-zinc-400 hover:text-zinc-200" onClick={() => { setEditingRepayment({ debtId: debt.id, repaymentId: r.id }); setEditAmount(String(r.gbpAmount)); }}><Pencil size={12} /></Button>
-                                <Button size="icon" variant="ghost" className="h-7 w-7 text-red-400 hover:bg-red-500/10" onClick={() => dispatch({ type: 'DELETE_DEBT_REPAYMENT', payload: { debtId: debt.id, repaymentId: r.id } })}><Trash2 size={12} /></Button>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })
-        )}
-      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })
+      )}
     </div>
   );
 }
