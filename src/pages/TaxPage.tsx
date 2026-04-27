@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useFinance } from '@/context/FinanceContext';
-import { Calculator, Send, TrendingUp, Trash2 } from 'lucide-react';
+import { Calculator, Send, TrendingUp, Trash2, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -39,6 +39,7 @@ export default function TaxPage() {
     platform: 'wise',
     rate: state.exchangeRate,
     fee: 0,
+    inrReceived: 0,
     note: ''
   });
 
@@ -90,6 +91,7 @@ export default function TaxPage() {
       platform: 'wise',
       rate: state.exchangeRate,
       fee: 0,
+      inrReceived: 0,
       note: ''
     });
   };
@@ -100,6 +102,85 @@ export default function TaxPage() {
 
   const formatGBP = (val: number) => `£${val.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   const formatINR = (val: number) => `₹${val.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  // Pay Calculator state
+  const [payAmount, setPayAmount] = useState(0);
+  const [payPeriod, setPayPeriod] = useState<'hourly' | 'daily' | 'weekly' | 'monthly' | 'annual'>('hourly');
+  const [hoursPerWeek, setHoursPerWeek] = useState(20);
+
+  // Calculate annual from any period
+  const annualFromPeriod = useMemo(() => {
+    if (payAmount <= 0) return 0;
+    switch (payPeriod) {
+      case 'hourly': return payAmount * hoursPerWeek * 52;
+      case 'daily': return payAmount * 5 * 52;
+      case 'weekly': return payAmount * 52;
+      case 'monthly': return payAmount * 12;
+      case 'annual': return payAmount;
+      default: return 0;
+    }
+  }, [payAmount, payPeriod, hoursPerWeek]);
+
+  // UK Tax calculations for Pay Calculator
+  const payCalculations = useMemo(() => {
+    const annual = annualFromPeriod;
+    const personalAllowance = 12570;
+    const niThreshold = 12570;
+    const niUpperLimit = 50270;
+    
+    // Income Tax (20% basic, 40% higher)
+    const taxable = Math.max(0, annual - personalAllowance);
+    let incomeTax = 0;
+    if (taxable > 0) {
+      const basicRateBand = 37700; // Up to £50,270 - £12,570 = £37,700
+      if (taxable <= basicRateBand) {
+        incomeTax = taxable * 0.20;
+      } else {
+        incomeTax = basicRateBand * 0.20 + (taxable - basicRateBand) * 0.40;
+      }
+    }
+    
+    // National Insurance (8% between £12,570 and £50,270)
+    const niBase = Math.max(0, Math.min(annual, niUpperLimit) - niThreshold);
+    const ni = niBase * 0.08;
+    
+    const totalDeductions = incomeTax + ni;
+    const annualTakeHome = annual - totalDeductions;
+    const effectiveRate = annual > 0 ? (totalDeductions / annual) * 100 : 0;
+    
+    return {
+      annual,
+      incomeTax,
+      ni,
+      totalDeductions,
+      annualTakeHome,
+      effectiveRate,
+      monthlyTakeHome: annualTakeHome / 12,
+      weeklyTakeHome: annualTakeHome / 52,
+    };
+  }, [annualFromPeriod]);
+
+  // Period values for table
+  const periodValues = useMemo(() => {
+    const annual = payCalculations.annual;
+    const net = payCalculations.annualTakeHome;
+    
+    return {
+      hourly: { gross: annual / (hoursPerWeek * 52), net: net / (hoursPerWeek * 52) },
+      daily: { gross: annual / (5 * 52), net: net / (5 * 52) },
+      weekly: { gross: annual / 52, net: net / 52 },
+      monthly: { gross: annual / 12, net: net / 12 },
+      annual: { gross: annual, net: net },
+    };
+  }, [payCalculations, hoursPerWeek]);
+
+  // Currency formatting based on app state
+  const formatCurrency = (val: number) => {
+    const converted = state.currency === 'INR' ? val * state.exchangeRate : val;
+    return state.currency === 'INR' 
+      ? `₹${converted.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+      : `£${converted.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
 
   return (
     <div className="space-y-8">
@@ -370,14 +451,142 @@ export default function TaxPage() {
           </Card>
         </div>
 
-        <Card className="p-6">
-          <h3 className="font-semibold mb-2">Net Disposable Income</h3>
-          <div className="text-3xl font-bold">{formatGBP(netDisposable)}</div>
-          <p className="text-sm text-muted-foreground mt-1">
-            Take home pay after tax and remittances
-          </p>
-        </Card>
-      </section>
-    </div>
-  );
-}
+         <Card className="p-6">
+           <h3 className="font-semibold mb-2">Net Disposable Income</h3>
+           <div className="text-3xl font-bold">{formatGBP(netDisposable)}</div>
+           <p className="text-sm text-muted-foreground mt-1">
+             Take home pay after tax and remittances
+           </p>
+         </Card>
+       </section>
+
+       {/* Section 4: Pay Calculator */}
+       <section>
+         <div className="flex justify-between items-center mb-4">
+           <h2 className="text-xl font-bold flex items-center gap-2">
+             <DollarSign size={20} />
+             Pay Calculator
+           </h2>
+           <Button 
+             variant="ghost" 
+             size="sm"
+             className="px-3"
+             onClick={() => dispatch({ type: 'TOGGLE_CURRENCY' })}
+           >
+             {state.showINR ? '₹ INR' : '£ GBP'}
+           </Button>
+         </div>
+         
+         <Card className="p-6">
+           <div className="space-y-6">
+             {/* Input Section */}
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+               <div>
+                 <Label>Pay Amount</Label>
+                 <Input 
+                   type="number" 
+                   value={payAmount}
+                   onChange={(e) => setPayAmount(Number(e.target.value))}
+                   placeholder="Enter amount"
+                 />
+               </div>
+               
+               <div>
+                 <Label>Pay Period</Label>
+                 <div className="flex rounded-md border border-input overflow-hidden mt-2">
+                   {['hourly', 'daily', 'weekly', 'monthly', 'annual'].map((period) => (
+                     <button
+                       key={period}
+                       className={`flex-1 px-2 py-2 text-sm transition-colors capitalize ${
+                         payPeriod === period 
+                           ? 'bg-primary text-primary-foreground' 
+                           : 'bg-background hover:bg-accent'
+                       }`}
+                       onClick={() => setPayPeriod(period as any)}
+                     >
+                       {period}
+                     </button>
+                   ))}
+                 </div>
+               </div>
+               
+               {payPeriod === 'hourly' && (
+                 <div>
+                   <Label>Hours per week: {hoursPerWeek}</Label>
+                   <div className="flex items-center gap-3 mt-2">
+                     <input 
+                       type="range" 
+                       min="1" 
+                       max="60" 
+                       value={hoursPerWeek}
+                       onChange={(e) => setHoursPerWeek(Number(e.target.value))}
+                       className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                     />
+                     <span className="text-sm font-medium w-10 text-right">{hoursPerWeek}</span>
+                   </div>
+                 </div>
+               )}
+             </div>
+
+             {/* Output Table */}
+             <div className="font-mono border rounded-lg p-4 bg-muted/30">
+               <div className="grid grid-cols-3 font-semibold border-b pb-2 mb-2">
+                 <div>Period</div>
+                 <div className="text-right">Gross</div>
+                 <div className="text-right">After Tax</div>
+               </div>
+               {Object.entries(periodValues).map(([period, values]) => (
+                 <div key={period} className="grid grid-cols-3 py-1">
+                   <div className="capitalize">{period}</div>
+                   <div className="text-right">{formatCurrency(values.gross)}</div>
+                   <div className="text-right text-green-600">{formatCurrency(values.net)}</div>
+                 </div>
+               ))}
+             </div>
+
+             {/* Summary Values */}
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+               <div className="space-y-2">
+                 <div className="flex justify-between py-1">
+                   <span>Annual Gross</span>
+                   <span className="font-medium">{formatCurrency(payCalculations.annual)}</span>
+                 </div>
+                 <div className="flex justify-between py-1">
+                   <span>Income Tax</span>
+                   <span className="text-red-500">- {formatCurrency(payCalculations.incomeTax)}</span>
+                 </div>
+                 <div className="flex justify-between py-1">
+                   <span>National Insurance</span>
+                   <span className="text-red-500">- {formatCurrency(payCalculations.ni)}</span>
+                 </div>
+                 <div className="flex justify-between py-1 border-t pt-1">
+                   <span>Total Deductions</span>
+                   <span className="text-red-500">- {formatCurrency(payCalculations.totalDeductions)}</span>
+                 </div>
+                 <div className="flex justify-between py-1 font-bold">
+                   <span>Annual Take-Home</span>
+                   <span className="text-green-600">{formatCurrency(payCalculations.annualTakeHome)}</span>
+                 </div>
+               </div>
+               
+               <div className="space-y-2">
+                 <div className="flex justify-between py-1">
+                   <span>Effective Rate</span>
+                   <span className="font-medium">{payCalculations.effectiveRate.toFixed(1)}%</span>
+                 </div>
+                 <div className="flex justify-between py-1">
+                   <span>Monthly Take-Home</span>
+                   <span className="text-green-600 font-medium">{formatCurrency(payCalculations.monthlyTakeHome)}</span>
+                 </div>
+                 <div className="flex justify-between py-1">
+                   <span>Weekly Take-Home</span>
+                   <span className="text-green-600 font-medium">{formatCurrency(payCalculations.weeklyTakeHome)}</span>
+                 </div>
+               </div>
+             </div>
+           </div>
+         </Card>
+       </section>
+     </div>
+   );
+ }
