@@ -111,7 +111,19 @@ export interface Budget {
   currency: Currency;
 }
 
+export interface Remittance {
+  id: string;
+  date: string;
+  amountGBP: number;
+  platform: string;
+  rate: number;
+  fee: number;
+  inrReceived: number;
+  note: string;
+}
+
 export interface AppState {
+  remittances: Remittance[];
   expenses: Expense[];
   incomes: Income[];
   loans: Loan[];
@@ -127,6 +139,7 @@ export interface AppState {
 }
 
 export const DEFAULT_STATE: AppState = {
+  remittances: [],
   expenses: [],
   incomes: [],
   loans: [],
@@ -141,7 +154,7 @@ export const DEFAULT_STATE: AppState = {
   customIncomeCategories: [],
 };
 
-export type Tab = 'dashboard' | 'expenses' | 'income' | 'accounts' | 'bills' | 'loans' | 'debts' | 'budget' | 'analytics' | 'settings';
+export type Tab = 'dashboard' | 'expenses' | 'income' | 'accounts' | 'bills' | 'loans' | 'debts' | 'budget' | 'analytics' | 'tax' | 'settings';
 
 export interface LoanSummary {
   originalPrincipal: number;

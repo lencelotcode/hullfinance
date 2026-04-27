@@ -10,6 +10,7 @@ import {
   PiggyBank,
   BarChart3,
   Settings,
+  Calculator,
 } from 'lucide-react';
 import Dashboard from '@/pages/Dashboard';
 import ExpensesPage from '@/pages/ExpensesPage';
@@ -21,6 +22,7 @@ import DebtsPage from '@/pages/DebtsPage';
 import BudgetPage from '@/pages/BudgetPage';
 import AnalyticsPage from '@/pages/AnalyticsPage';
 import SettingsPage from '@/pages/SettingsPage';
+import TaxPage from '@/pages/TaxPage';
 import { monthLabel } from '@/lib/finance';
 
 const TABS = [
@@ -33,6 +35,7 @@ const TABS = [
   { key: 'debts', label: 'Owed', icon: HandCoins },
   { key: 'budget', label: 'Budget', icon: PiggyBank },
   { key: 'analytics', label: 'Analytics', icon: BarChart3 },
+  { key: 'tax', label: 'Tax', icon: Calculator },
   { key: 'settings', label: 'Settings', icon: Settings },
 ] as const;
 
@@ -171,8 +174,9 @@ export default function App() {
           {activeTab === 'loans' && <LoansPage />}
           {activeTab === 'debts' && <DebtsPage />}
           {activeTab === 'budget' && <BudgetPage />}
-          {activeTab === 'analytics' && <AnalyticsPage />}
-          {activeTab === 'settings' && <SettingsPage />}
+{activeTab === 'analytics' && <AnalyticsPage />}
+{activeTab === 'tax' && <TaxPage />}
+{activeTab === 'settings' && <SettingsPage />}
         </div>
       </main>
     </div>

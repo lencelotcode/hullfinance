@@ -63,6 +63,8 @@ type Action =
   | { type: 'DELETE_EXPENSE_CATEGORY'; payload: string }
   | { type: 'ADD_INCOME_CATEGORY'; payload: string }
   | { type: 'DELETE_INCOME_CATEGORY'; payload: string }
+  | { type: 'ADD_REMITTANCE'; payload: any }
+  | { type: 'DELETE_REMITTANCE'; payload: string }
   | { type: 'LOAD_STATE'; payload: AppState }
   | { type: 'RESET_STATE' };
 
@@ -301,6 +303,14 @@ function reducer(state: AppState, action: Action): AppState {
       return newState;
     case 'DELETE_INCOME_CATEGORY':
       newState = { ...state, customIncomeCategories: state.customIncomeCategories.filter((c) => c !== action.payload) };
+      saveState(newState);
+      return newState;
+    case 'ADD_REMITTANCE':
+      newState = { ...state, remittances: [...(state.remittances || []), action.payload] };
+      saveState(newState);
+      return newState;
+    case 'DELETE_REMITTANCE':
+      newState = { ...state, remittances: (state.remittances || []).filter((r) => r.id !== action.payload) };
       saveState(newState);
       return newState;
     case 'LOAD_STATE':
