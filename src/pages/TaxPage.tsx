@@ -471,9 +471,9 @@ export default function TaxPage() {
              variant="ghost" 
              size="sm"
              className="px-3"
-             onClick={() => dispatch({ type: 'TOGGLE_CURRENCY' })}
+             onClick={() => dispatch({ type: 'SET_CURRENCY', payload: state.currency === 'GBP' ? 'INR' : 'GBP' })}
            >
-             {state.showINR ? '₹ INR' : '£ GBP'}
+             {state.currency === 'INR' ? '₹ INR' : '£ GBP'}
            </Button>
          </div>
          
