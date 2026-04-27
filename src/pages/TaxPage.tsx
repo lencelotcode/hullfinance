@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useFinance } from '@/context/FinanceContext';
 import { Calculator, Send, TrendingUp, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';

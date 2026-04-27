@@ -241,6 +241,7 @@ export async function loadStateFromSupabase(): Promise<AppState> {
     ]);
 
     return {
+      remittances: [],
       expenses: (expenses || []).map(dbExpenseToApp),
       incomes: (incomes || []).map(dbIncomeToApp),
       loans: (loans || []).map(dbLoanToApp),
@@ -257,14 +258,15 @@ export async function loadStateFromSupabase(): Promise<AppState> {
   } catch (error) {
     console.error('Failed to load state from Supabase:', error);
     // Fallback to empty state
-    return {
-      expenses: [],
-      incomes: [],
-      loans: [],
-      debts: [],
-      accounts: [],
-      bills: [],
-      budgets: [],
+      return {
+        remittances: [],
+        expenses: [],
+        incomes: [],
+        loans: [],
+        debts: [],
+        accounts: [],
+        bills: [],
+        budgets: [],
       filterMonth: new Date().toISOString().slice(0, 7),
       currency: 'INR',
       exchangeRate: 110,
