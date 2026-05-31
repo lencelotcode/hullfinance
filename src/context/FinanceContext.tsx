@@ -92,7 +92,7 @@ function reducer(state: AppState, action: Action): AppState {
       saveState(newState);
       return newState;
     case 'ADD_EXPENSE':
-      newState = { ...state, expenses: [...state.expenses, { ...action.payload, id: uid() }] };
+      newState = { ...state, expenses: [...state.expenses, { ...action.payload, id: uid(), exchangeRateAtTime: state.exchangeRate, exchangeRateUSDAtTime: state.exchangeRateUSD || 83 }] };
       saveState(newState);
       return newState;
     case 'DELETE_EXPENSE':
@@ -100,7 +100,7 @@ function reducer(state: AppState, action: Action): AppState {
       saveState(newState);
       return newState;
     case 'ADD_INCOME':
-      newState = { ...state, incomes: [...state.incomes, { ...action.payload, id: uid() }] };
+      newState = { ...state, incomes: [...state.incomes, { ...action.payload, id: uid(), exchangeRateAtTime: state.exchangeRate, exchangeRateUSDAtTime: state.exchangeRateUSD || 83 }] };
       saveState(newState);
       return newState;
     case 'DELETE_INCOME':
@@ -108,7 +108,7 @@ function reducer(state: AppState, action: Action): AppState {
       saveState(newState);
       return newState;
     case 'ADD_LOAN':
-      newState = { ...state, loans: [...state.loans, { ...action.payload, id: uid() }] };
+      newState = { ...state, loans: [...state.loans, { ...action.payload, id: uid(), exchangeRateAtTime: state.exchangeRate, exchangeRateUSDAtTime: state.exchangeRateUSD || 83 }] };
       saveState(newState);
       return newState;
     case 'DELETE_LOAN':
@@ -182,7 +182,7 @@ function reducer(state: AppState, action: Action): AppState {
       return newState;
     }
     case 'ADD_DEBT':
-      newState = { ...state, debts: [...state.debts, { ...action.payload, id: uid() }] };
+      newState = { ...state, debts: [...state.debts, { ...action.payload, id: uid(), exchangeRateAtTime: state.exchangeRate, exchangeRateUSDAtTime: state.exchangeRateUSD || 83 }] };
       saveState(newState);
       return newState;
     case 'DELETE_DEBT':
@@ -258,25 +258,41 @@ function reducer(state: AppState, action: Action): AppState {
       newState = { ...state, bills: [...state.bills, { ...action.payload, id: uid(), status: 'pending' }] };
       saveState(newState);
       return newState;
-    case 'PAY_BILL': {
+        case "PAY_BILL": {
       const bill = state.bills.find((b) => b.id === action.payload);
       const updatedBills = state.bills.map((b) =>
-        b.id === action.payload ? { ...b, status: 'paid' as const, paidDate: today() } : b
+        b.id === action.payload ? { ...b, status: "paid" as const, paidDate: today() } : b
       );
-      if (bill && bill.frequency !== 'once') {
+      
+      let nextExpenses = state.expenses;
+      if (bill) {
+        nextExpenses = [...state.expenses, {
+          id: uid(),
+          amount: bill.amount,
+          category: bill.name,
+          date: today(),
+          note: "Bill payment: " + bill.name,
+          currency: bill.currency,
+          source: "Owned Money",
+          exchangeRateAtTime: state.exchangeRate,
+          exchangeRateUSDAtTime: state.exchangeRateUSD || 83
+        }];
+      }
+      
+      if (bill && bill.frequency !== "once") {
         const nextDue = new Date(bill.dueDate);
-        if (bill.frequency === 'monthly') nextDue.setMonth(nextDue.getMonth() + 1);
-        else if (bill.frequency === 'weekly') nextDue.setDate(nextDue.getDate() + 7);
-        else if (bill.frequency === 'yearly') nextDue.setFullYear(nextDue.getFullYear() + 1);
+        if (bill.frequency === "monthly") nextDue.setMonth(nextDue.getMonth() + 1);
+        else if (bill.frequency === "weekly") nextDue.setDate(nextDue.getDate() + 7);
+        else if (bill.frequency === "yearly") nextDue.setFullYear(nextDue.getFullYear() + 1);
         updatedBills.push({
           ...bill,
           id: uid(),
           dueDate: nextDue.toISOString().slice(0, 10),
-          status: 'pending' as const,
+          status: "pending" as const,
           paidDate: undefined,
         });
       }
-      newState = { ...state, bills: updatedBills };
+      newState = { ...state, bills: updatedBills, expenses: nextExpenses };
       saveState(newState);
       return newState;
     }
@@ -361,15 +377,24 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
     setActiveTabRaw(tab);
   }, []);
 
-  const filteredExpenses = state.expenses.filter(
-    (e) => e.date.startsWith(state.filterMonth) && e.currency === state.currency
-  );
-  const filteredIncomes = state.incomes.filter(
-    (i) => i.date.startsWith(state.filterMonth) && i.currency === state.currency
-  );
+  const filteredExpenses = state.expenses.filter((e) => e.date.startsWith(state.filterMonth));
+  const filteredIncomes = state.incomes.filter((i) => i.date.startsWith(state.filterMonth));
 
-  const totalExpenses = filteredExpenses.reduce((s, e) => s + Number(e.amount), 0);
-  const totalIncome = filteredIncomes.reduce((s, i) => s + Number(i.amount), 0);
+  
+  function convertToTarget(amt: number | string, c: string, targetC: string, rate: number, rateUSD: number) {
+    if (c === targetC) return Number(amt);
+    let inrVal = Number(amt);
+    if (c === 'GBP') inrVal = Number(amt) * (rate || 110);
+    else if (c === 'USD') inrVal = Number(amt) * (rateUSD || 83);
+    
+    if (targetC === 'INR') return inrVal;
+    if (targetC === 'GBP') return inrVal / (rate || 110);
+    if (targetC === 'USD') return inrVal / (rateUSD || 83);
+    return Number(amt);
+  }
+
+  const totalExpenses = filteredExpenses.reduce((s, e) => s + convertToTarget(e.amount, e.currency, state.currency, e.exchangeRateAtTime || state.exchangeRate, e.exchangeRateUSDAtTime || state.exchangeRateUSD), 0);
+  const totalIncome = filteredIncomes.reduce((s, i) => s + convertToTarget(i.amount, i.currency, state.currency, i.exchangeRateAtTime || state.exchangeRate, i.exchangeRateUSDAtTime || state.exchangeRateUSD), 0);
   const netBalance = totalIncome - totalExpenses;
 
   const loanSummaries = state.loans
@@ -397,7 +422,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
 
   const catTotals: Record<string, number> = {};
   filteredExpenses.forEach((e) => {
-    catTotals[e.category] = (catTotals[e.category] || 0) + Number(e.amount);
+    catTotals[e.category] = (catTotals[e.category] || 0) + convertToTarget(e.amount, e.currency, state.currency, e.exchangeRateAtTime || state.exchangeRate, e.exchangeRateUSDAtTime || state.exchangeRateUSD);
   });
   const topCats = Object.entries(catTotals).sort((a, b) => b[1] - a[1]).slice(0, 6);
 

@@ -1,18 +1,22 @@
-import { useState } from 'react';
-import { Search, Trash2, Plus } from 'lucide-react';
-import { useFinance } from '@/context/FinanceContext';
-import { fmt, today, monthLabel } from '@/lib/finance';
-import { EXPENSE_CATS } from '@/lib/types';
-import { categoryEmoji } from '@/lib/emojis';
+import { useState } from "react";
+import { Search, Trash2, Plus } from "lucide-react";
+import { useFinance } from "@/context/FinanceContext";
+import { fmt, today, monthLabel } from "@/lib/finance";
+import { EXPENSE_CATS } from "@/lib/types";
+import { categoryEmoji } from "@/lib/emojis";
+import { Switch } from "@/components/ui/switch";
 
 export default function ExpensesPage() {
   const { state, dispatch, filteredExpenses } = useFinance();
-  const [amount, setAmount] = useState('');
+  const [amount, setAmount] = useState("");
   const [category, setCategory] = useState(EXPENSE_CATS[0]);
-  const [source, setSource] = useState('Owned Money');
+  const [source, setSource] = useState("Owned Money");
   const [date, setDate] = useState(today());
-  const [note, setNote] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [note, setNote] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSplit, setIsSplit] = useState(false);
+  const [splitPerson, setSplitPerson] = useState("");
+  const [splitAmount, setSplitAmount] = useState("");
 
   const allExpenseCategories = [...new Set([...EXPENSE_CATS, ...state.customExpenseCategories])];
 
@@ -31,31 +35,53 @@ export default function ExpensesPage() {
   const topCat = Object.entries(cats).sort((a, b) => b[1] - a[1])[0];
 
   const sourceOptions = [
-    { value: 'Owned Money', label: 'Owned Money' },
-    ...state.accounts.map((a) => ({ value: `Account: ${a.name}`, label: `Account: ${a.name}` })),
-    ...state.loans.map((l) => ({ value: `Loan: ${l.person}`, label: `Loan: ${l.person}` })),
+    { value: "Owned Money", label: "Owned Money" },
+    ...state.accounts.map((a) => ({ value: "Account: " + a.name, label: "Account: " + a.name })),
+    ...state.loans.map((l) => ({ value: "Loan: " + l.person, label: "Loan: " + l.person })),
   ];
 
   function handleAdd() {
     const val = parseFloat(amount);
-    if (!val || val <= 0) return alert('Enter a valid amount');
+    if (!val || val <= 0) return alert("Enter a valid amount");
+    
     dispatch({
-      type: 'ADD_EXPENSE',
+      type: "ADD_EXPENSE",
       payload: { amount: val, category, date, note, currency: state.currency, source },
     });
-    setAmount('');
-    setNote('');
-    setSource('Owned Money');
+    
+    if (isSplit) {
+      const splitVal = parseFloat(splitAmount);
+      if (splitVal && splitVal > 0 && splitPerson.trim()) {
+        dispatch({
+          type: "ADD_DEBT",
+          payload: {
+            person: splitPerson.trim(),
+            amount: splitVal,
+            date,
+            note: note ? "Split: " + note : "Shared " + category + " bill",
+            currency: state.currency,
+            repayments: []
+          }
+        });
+      }
+    }
+    
+    setAmount("");
+    setNote("");
+    setSource("Owned Money");
+    setIsSplit(false);
+    setSplitPerson("");
+    setSplitAmount("");
   }
 
   return (
-    <div>
+    <div className="hf-page-enter">
       {/* Stats */}
       <div className="hf-stat-grid">
         <div className="hf-stat-card">
           <div className="hf-stat-card-header">
             <span className="hf-stat-card-label">Total</span>
-            <span className="hf-stat-icon"><Plus size={16} style={{ color: '#B03030', transform: 'rotate(45deg)' }} /></span>
+            <span className="hf-stat-icon"><Plus size={16} style={{ color: "#B03030", transform: "rotate(45deg)" }} /></span>
           </div>
           <div className="hf-stat-value red">{fmt(total, state.currency)}</div>
         </div>
@@ -78,7 +104,7 @@ export default function ExpensesPage() {
             <span className="hf-stat-card-label">Top Category</span>
             <span className="hf-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#5A9E6F" strokeWidth="2" width="16" height="16"><path d="M4 6h16M4 12h16M4 18h16"/></svg></span>
           </div>
-          <div className="hf-stat-value neutral">{topCat ? topCat[0] : 'N/A'}</div>
+          <div className="hf-stat-value neutral">{topCat ? topCat[0] : "N/A"}</div>
         </div>
       </div>
 
@@ -96,8 +122,8 @@ export default function ExpensesPage() {
       </div>
 
       {/* Add Form */}
-      <div className="hf-panel" style={{ marginBottom: '20px' }}>
-        <div className="hf-section-title" style={{ marginBottom: '16px' }}>Add Expense</div>
+      <div className="hf-panel" style={{ marginBottom: "20px" }}>
+        <div className="hf-section-title" style={{ marginBottom: "16px" }}>Add Expense</div>
         <div className="hf-form-grid">
           <div className="hf-form-field">
             <label className="hf-form-label">Amount</label>
@@ -123,6 +149,24 @@ export default function ExpensesPage() {
             <label className="hf-form-label">Note (optional)</label>
             <input type="text" placeholder="Description..." value={note} onChange={(e) => setNote(e.target.value)} />
           </div>
+          
+          <div className="hf-form-field hf-form-full" style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "12px", marginTop: "4px" }}>
+            <Switch checked={isSplit} onCheckedChange={setIsSplit} id="split-toggle" />
+            <label htmlFor="split-toggle" style={{ fontSize: "13px", cursor: "pointer", color: "var(--text)" }}>Split this expense (automatically create a debt owed to you)</label>
+          </div>
+          
+          {isSplit && (
+            <>
+              <div className="hf-form-field">
+                <label className="hf-form-label">Who owes you?</label>
+                <input type="text" placeholder="Flatmate name..." value={splitPerson} onChange={(e) => setSplitPerson(e.target.value)} />
+              </div>
+              <div className="hf-form-field">
+                <label className="hf-form-label">Amount they owe</label>
+                <input type="number" placeholder="0.00" step="0.01" min="0" value={splitAmount} onChange={(e) => setSplitAmount(e.target.value)} />
+              </div>
+            </>
+          )}
         </div>
         <button className="hf-btn" onClick={handleAdd}>
           <Plus size={14} strokeWidth={2.5} />
@@ -134,12 +178,12 @@ export default function ExpensesPage() {
       <div className="hf-panel">
         <div className="hf-section-header">
           <span className="hf-section-title">Expenses — {monthLabel(state.filterMonth)}</span>
-          <span className="hf-section-count">{displayExpenses.length} record{displayExpenses.length !== 1 ? 's' : ''}</span>
+          <span className="hf-section-count">{displayExpenses.length} record{displayExpenses.length !== 1 ? "s" : ""}</span>
         </div>
         <div className="hf-tx-list">
           {displayExpenses.length === 0 ? (
             <div className="hf-empty">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" width="32" height="32" style={{ margin: '0 auto 12px', opacity: 0.3, display: 'block' }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" width="32" height="32" style={{ margin: "0 auto 12px", opacity: 0.3, display: "block" }}>
                 <circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>
               </svg>
               No expenses recorded
@@ -150,10 +194,10 @@ export default function ExpensesPage() {
                 <div className="hf-tx-icon">{categoryEmoji(e.category)}</div>
                 <div className="hf-tx-info">
                   <div className="hf-tx-name">{e.note || e.category}</div>
-                  <div className="hf-tx-meta">{e.date}{e.source ? ' · ' + e.source : ''}{e.note ? ' · ' + e.note : ''}</div>
+                  <div className="hf-tx-meta">{e.date}{e.source ? " · " + e.source : ""}</div>
                 </div>
-                <span className="hf-tx-amount expense">-{fmt(e.amount, state.currency)}</span>
-                <button className="hf-tx-delete" onClick={() => dispatch({ type: 'DELETE_EXPENSE', payload: e.id })}>
+                <span className="hf-tx-amount expense">-{fmt(e.amount, e.currency)}</span>
+                <button className="hf-tx-delete" onClick={() => dispatch({ type: "DELETE_EXPENSE", payload: e.id })}>
                   <Trash2 size={13} />
                 </button>
               </div>

@@ -35,6 +35,8 @@ export interface Transaction {
   note: string;
   currency: Currency;
   source?: string;
+  exchangeRateAtTime?: number;
+  exchangeRateUSDAtTime?: number;
 }
 
 export interface Expense extends Transaction {
@@ -69,6 +71,8 @@ export interface Loan {
   interestType: 'simple' | 'compound';
   repayments: Repayment[];
   utilizations: Utilization[];
+  exchangeRateAtTime?: number;
+  exchangeRateUSDAtTime?: number;
 }
 
 export interface Debt {
@@ -79,6 +83,8 @@ export interface Debt {
   note: string;
   currency: Currency;
   repayments: Repayment[];
+  exchangeRateAtTime?: number;
+  exchangeRateUSDAtTime?: number;
 }
 
 export interface Account {

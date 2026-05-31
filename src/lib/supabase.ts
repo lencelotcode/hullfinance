@@ -137,6 +137,8 @@ export function dbExpenseToApp(db: DbExpense) {
     date: db.date,
     note: db.note,
     currency: db.currency as 'GBP' | 'INR' | 'USD',
+    exchangeRateAtTime: (db as any).exchangeRateAtTime,
+    exchangeRateUSDAtTime: (db as any).exchangeRateUSDAtTime,
     source: db.source,
   };
 }
@@ -149,6 +151,8 @@ export function dbIncomeToApp(db: DbIncome) {
     date: db.date,
     note: db.note,
     currency: db.currency as 'GBP' | 'INR' | 'USD',
+    exchangeRateAtTime: (db as any).exchangeRateAtTime,
+    exchangeRateUSDAtTime: (db as any).exchangeRateUSDAtTime,
     source: db.source || '',
   };
 }
@@ -161,6 +165,8 @@ export function dbLoanToApp(db: DbLoan) {
     date: db.date,
     note: db.note,
     currency: db.currency as 'GBP' | 'INR' | 'USD',
+    exchangeRateAtTime: (db as any).exchangeRateAtTime,
+    exchangeRateUSDAtTime: (db as any).exchangeRateUSDAtTime,
     interestRate: db.interestRate,
     interestType: db.interestType as 'simple' | 'compound',
     repayments: db.repayments || [],
@@ -176,6 +182,8 @@ export function dbDebtToApp(db: DbDebt) {
     date: db.date,
     note: db.note,
     currency: db.currency as 'GBP' | 'INR' | 'USD',
+    exchangeRateAtTime: (db as any).exchangeRateAtTime,
+    exchangeRateUSDAtTime: (db as any).exchangeRateUSDAtTime,
     repayments: db.repayments || [],
   };
 }
@@ -187,6 +195,8 @@ export function dbAccountToApp(db: DbAccount) {
     type: db.type,
     balance: db.balance,
     currency: db.currency as 'GBP' | 'INR' | 'USD',
+    exchangeRateAtTime: (db as any).exchangeRateAtTime,
+    exchangeRateUSDAtTime: (db as any).exchangeRateUSDAtTime,
   };
 }
 
@@ -201,6 +211,8 @@ export function dbBillToApp(db: DbBill) {
     status: db.status as 'pending' | 'paid',
     paidDate: db.paidDate,
     currency: db.currency as 'GBP' | 'INR' | 'USD',
+    exchangeRateAtTime: (db as any).exchangeRateAtTime,
+    exchangeRateUSDAtTime: (db as any).exchangeRateUSDAtTime,
   };
 }
 
@@ -211,6 +223,8 @@ export function dbBudgetToApp(db: DbBudget) {
     limit: db.budget_limit,
     month: db.month,
     currency: db.currency as 'GBP' | 'INR' | 'USD',
+    exchangeRateAtTime: (db as any).exchangeRateAtTime,
+    exchangeRateUSDAtTime: (db as any).exchangeRateUSDAtTime,
   };
 }
 
