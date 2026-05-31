@@ -160,6 +160,9 @@ export default function AccountsPage() {
   const totalGBP = allAccounts
     .filter((a) => a.currency === 'GBP')
     .reduce((s, a) => s + Number(a.balance), 0);
+  const totalUSD = allAccounts
+    .filter((a) => a.currency === 'USD')
+    .reduce((s, a) => s + Number(a.balance), 0);
   const totalINR = allAccounts
     .filter((a) => a.currency === 'INR')
     .reduce((s, a) => s + Number(a.balance), 0);
@@ -168,9 +171,11 @@ export default function AccountsPage() {
 
   let combinedTotal = 0;
   if (state.currency === 'GBP') {
-    combinedTotal = totalGBP + convertINRtoGBP(totalINR, state.exchangeRate);
+    combinedTotal = totalGBP + convertINRtoGBP(totalINR + (totalUSD * (state.exchangeRateUSD || 83)), state.exchangeRate);
+  } else if (state.currency === 'USD') {
+    combinedTotal = totalUSD + ((totalINR + (totalGBP * state.exchangeRate)) / (state.exchangeRateUSD || 83));
   } else {
-    combinedTotal = totalINR + totalGBP * state.exchangeRate;
+    combinedTotal = totalINR + (totalGBP * state.exchangeRate) + (totalUSD * (state.exchangeRateUSD || 83));
   }
 
   function handleAdd() {

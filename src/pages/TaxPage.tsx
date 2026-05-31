@@ -176,10 +176,12 @@ export default function TaxPage() {
 
   // Currency formatting based on app state
   const formatCurrency = (val: number) => {
-    const converted = state.currency === 'INR' ? val * state.exchangeRate : val;
-    return state.currency === 'INR' 
-      ? `₹${converted.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-      : `£${converted.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    let converted = val;
+    if (state.currency === 'INR') converted = val * state.exchangeRate;
+    else if (state.currency === 'USD') converted = val * (state.exchangeRate / (state.exchangeRateUSD || 83));
+    if (state.currency === 'INR') return '₹' + converted.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (state.currency === 'USD') return '$' + converted.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return '£' + converted.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
   return (

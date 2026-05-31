@@ -97,7 +97,7 @@ export default function App() {
             <div className="hf-brand-sub">UK Masters Student Edition</div>
           </div>
         </div>
-        <div className="hf-header-right">
+        <div className="hf-header-right" style={{ flexWrap: "wrap", justifyContent: "flex-end" }}>
           <div className="hf-fx-row">
             <span>1 GBP =</span>
             <input
@@ -109,6 +109,21 @@ export default function App() {
               onChange={(e) => {
                 const val = parseFloat(e.target.value);
                 if (val > 0) dispatch({ type: 'SET_EXCHANGE_RATE', payload: val });
+              }}
+            />
+            <span>INR</span>
+          </div>
+          <div className="hf-fx-row" style={{ marginLeft: "12px" }}>
+            <span>1 USD =</span>
+            <input
+              className="hf-fx-input"
+              type="number"
+              value={state.exchangeRateUSD || 83}
+              min="1"
+              step="0.01"
+              onChange={(e) => {
+                const val = parseFloat(e.target.value);
+                if (val > 0) dispatch({ type: "SET_EXCHANGE_RATE_USD", payload: val });
               }}
             />
             <span>INR</span>
@@ -125,6 +140,12 @@ export default function App() {
               onClick={() => dispatch({ type: 'SET_CURRENCY', payload: 'INR' })}
             >
               ₹ INR
+            </button>
+            <button
+              className={`hf-currency-btn ${state.currency === "USD" ? "active" : ""}`}
+              onClick={() => dispatch({ type: "SET_CURRENCY", payload: "USD" })}
+            >
+              $ USD
             </button>
           </div>
         </div>

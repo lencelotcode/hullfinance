@@ -34,6 +34,7 @@ type Action =
   | { type: 'SET_MONTH'; payload: string }
   | { type: 'SET_CURRENCY'; payload: Currency }
   | { type: 'SET_EXCHANGE_RATE'; payload: number }
+  | { type: 'SET_EXCHANGE_RATE_USD'; payload: number }
   | { type: 'ADD_EXPENSE'; payload: Omit<Expense, 'id'> }
   | { type: 'DELETE_EXPENSE'; payload: string }
   | { type: 'ADD_INCOME'; payload: Omit<Income, 'id'> }
@@ -84,6 +85,10 @@ function reducer(state: AppState, action: Action): AppState {
       return newState;
     case 'SET_EXCHANGE_RATE':
       newState = { ...state, exchangeRate: action.payload };
+      saveState(newState);
+      return newState;
+    case 'SET_EXCHANGE_RATE_USD':
+      newState = { ...state, exchangeRateUSD: action.payload };
       saveState(newState);
       return newState;
     case 'ADD_EXPENSE':

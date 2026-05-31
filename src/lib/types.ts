@@ -1,4 +1,4 @@
-export type Currency = 'GBP' | 'INR';
+export type Currency = 'GBP' | 'INR' | 'USD';
 
 export interface CurrencyConfig {
   symbol: string;
@@ -9,6 +9,7 @@ export interface CurrencyConfig {
 export const CURRENCIES: Record<Currency, CurrencyConfig> = {
   GBP: { symbol: '£', label: 'GBP', locale: 'en-GB' },
   INR: { symbol: '₹', label: 'INR', locale: 'en-IN' },
+  USD: { symbol: '$', label: 'USD', locale: 'en-US' },
 };
 
 export const EXPENSE_CATS = [
@@ -134,6 +135,7 @@ export interface AppState {
   filterMonth: string;
   currency: Currency;
   exchangeRate: number;
+  exchangeRateUSD: number;
   customExpenseCategories: string[];
   customIncomeCategories: string[];
 }
@@ -150,6 +152,7 @@ export const DEFAULT_STATE: AppState = {
   filterMonth: new Date().toISOString().slice(0, 7),
   currency: 'INR',
   exchangeRate: 110,
+  exchangeRateUSD: 83,
   customExpenseCategories: [],
   customIncomeCategories: [],
 };

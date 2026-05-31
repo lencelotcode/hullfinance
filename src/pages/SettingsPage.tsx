@@ -7,6 +7,7 @@ import { EXPENSE_CATS, INCOME_CATS } from '@/lib/types';
 export default function SettingsPage() {
   const { state, dispatch } = useFinance();
   const [rate, setRate] = useState(String(state.exchangeRate));
+  const [rateUSD, setRateUSD] = useState(String(state.exchangeRateUSD || 83));
   const [importText, setImportText] = useState('');
   const [showReset, setShowReset] = useState(false);
   const [newExpenseCat, setNewExpenseCat] = useState('');
@@ -61,6 +62,7 @@ export default function SettingsPage() {
           <div className="hf-currency-toggle" style={{ display: 'flex', border: '1px solid var(--border2)', overflow: 'hidden' }}>
             <button className={`hf-currency-btn ${state.currency === 'GBP' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_CURRENCY', payload: 'GBP' })}>£ GBP</button>
             <button className={`hf-currency-btn ${state.currency === 'INR' ? 'active' : ''}`} onClick={() => dispatch({ type: 'SET_CURRENCY', payload: 'INR' })}>₹ INR</button>
+            <button className={'hf-currency-btn ' + (state.currency === 'USD' ? 'active' : '')} onClick={() => dispatch({ type: 'SET_CURRENCY', payload: 'USD' })}>$ USD</button>
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -70,6 +72,15 @@ export default function SettingsPage() {
           <button className="hf-btn" style={{ padding: '8px 14px', fontSize: '12px' }} onClick={() => {
             const r = parseFloat(rate);
             if (r > 0) dispatch({ type: 'SET_EXCHANGE_RATE', payload: r });
+          }}>Update</button>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '12px' }}>
+          <span style={{ fontSize: '13px', color: 'var(--muted)' }}>1 USD =</span>
+          <input type="number" value={rateUSD} onChange={(e) => setRateUSD(e.target.value)} min="1" step="0.01" style={{ width: '80px' }} />
+          <span style={{ fontSize: '13px', color: 'var(--muted)' }}>INR</span>
+          <button className="hf-btn" style={{ padding: '8px 14px', fontSize: '12px' }} onClick={() => {
+            const r = parseFloat(rateUSD);
+            if (r > 0) dispatch({ type: 'SET_EXCHANGE_RATE_USD', payload: r });
           }}>Update</button>
         </div>
       </div>

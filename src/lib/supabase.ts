@@ -124,6 +124,7 @@ export interface DbSettings {
   filterMonth: string;
   currency: string;
   exchangeRate: number;
+  exchangeRateUSD: number;
   created_at?: string;
 }
 
@@ -135,7 +136,7 @@ export function dbExpenseToApp(db: DbExpense) {
     category: db.category,
     date: db.date,
     note: db.note,
-    currency: db.currency as 'GBP' | 'INR',
+    currency: db.currency as 'GBP' | 'INR' | 'USD',
     source: db.source,
   };
 }
@@ -147,7 +148,7 @@ export function dbIncomeToApp(db: DbIncome) {
     category: db.category,
     date: db.date,
     note: db.note,
-    currency: db.currency as 'GBP' | 'INR',
+    currency: db.currency as 'GBP' | 'INR' | 'USD',
     source: db.source || '',
   };
 }
@@ -159,7 +160,7 @@ export function dbLoanToApp(db: DbLoan) {
     amount: db.amount,
     date: db.date,
     note: db.note,
-    currency: db.currency as 'GBP' | 'INR',
+    currency: db.currency as 'GBP' | 'INR' | 'USD',
     interestRate: db.interestRate,
     interestType: db.interestType as 'simple' | 'compound',
     repayments: db.repayments || [],
@@ -174,7 +175,7 @@ export function dbDebtToApp(db: DbDebt) {
     amount: db.amount,
     date: db.date,
     note: db.note,
-    currency: db.currency as 'GBP' | 'INR',
+    currency: db.currency as 'GBP' | 'INR' | 'USD',
     repayments: db.repayments || [],
   };
 }
@@ -185,7 +186,7 @@ export function dbAccountToApp(db: DbAccount) {
     name: db.name,
     type: db.type,
     balance: db.balance,
-    currency: db.currency as 'GBP' | 'INR',
+    currency: db.currency as 'GBP' | 'INR' | 'USD',
   };
 }
 
@@ -199,7 +200,7 @@ export function dbBillToApp(db: DbBill) {
     note: db.note,
     status: db.status as 'pending' | 'paid',
     paidDate: db.paidDate,
-    currency: db.currency as 'GBP' | 'INR',
+    currency: db.currency as 'GBP' | 'INR' | 'USD',
   };
 }
 
@@ -209,7 +210,7 @@ export function dbBudgetToApp(db: DbBudget) {
     category: db.category,
     limit: db.budget_limit,
     month: db.month,
-    currency: db.currency as 'GBP' | 'INR',
+    currency: db.currency as 'GBP' | 'INR' | 'USD',
   };
 }
 
@@ -250,8 +251,9 @@ export async function loadStateFromSupabase(): Promise<AppState> {
       bills: (bills || []).map(dbBillToApp),
       budgets: (budgets || []).map(dbBudgetToApp),
       filterMonth: settings?.filterMonth || new Date().toISOString().slice(0, 7),
-      currency: (settings?.currency || 'INR') as 'GBP' | 'INR',
+      currency: (settings?.currency || 'INR') as 'GBP' | 'INR' | 'USD',
       exchangeRate: settings?.exchangeRate || 110,
+      exchangeRateUSD: settings?.exchangeRateUSD || 83,
       customExpenseCategories: settings?.customExpenseCategories || [],
       customIncomeCategories: settings?.customIncomeCategories || [],
     };
@@ -270,6 +272,7 @@ export async function loadStateFromSupabase(): Promise<AppState> {
       filterMonth: new Date().toISOString().slice(0, 7),
       currency: 'INR',
       exchangeRate: 110,
+      exchangeRateUSD: 83,
       customExpenseCategories: [],
       customIncomeCategories: [],
     };
@@ -308,6 +311,7 @@ export async function saveStateToSupabase(state: AppState): Promise<void> {
         filterMonth: state.filterMonth,
         currency: state.currency,
         exchangeRate: state.exchangeRate,
+        exchangeRateUSD: state.exchangeRateUSD || 83,
       }),
     ]);
   } catch (error) {

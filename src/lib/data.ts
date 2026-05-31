@@ -12,6 +12,7 @@ const KEYS = {
   budgets: 'hull_budgets',
   currency: 'hull_currency',
   exchangeRate: 'hull_exchange_rate',
+  exchangeRateUSD: 'hull_exchange_rate_usd',
   filterMonth: 'hull_filter_month',
 };
 
@@ -35,6 +36,7 @@ export async function saveState(state: AppState) {
       localStorage.setItem(KEYS.budgets, JSON.stringify(state.budgets));
       localStorage.setItem(KEYS.currency, state.currency);
       localStorage.setItem(KEYS.exchangeRate, String(state.exchangeRate));
+      localStorage.setItem(KEYS.exchangeRateUSD, String(state.exchangeRateUSD || 83));
       localStorage.setItem(KEYS.filterMonth, state.filterMonth);
     } catch (e) {
       console.error('Failed to save state:', e);
@@ -59,6 +61,7 @@ export async function saveState(state: AppState) {
       localStorage.setItem(KEYS.budgets, JSON.stringify(state.budgets));
       localStorage.setItem(KEYS.currency, state.currency);
       localStorage.setItem(KEYS.exchangeRate, String(state.exchangeRate));
+      localStorage.setItem(KEYS.exchangeRateUSD, String(state.exchangeRateUSD || 83));
       localStorage.setItem(KEYS.filterMonth, state.filterMonth);
     } catch (localError) {
       console.error('Failed to save to localStorage:', localError);
@@ -92,6 +95,7 @@ function loadFromLocalStorage(): AppState {
     const bud = localStorage.getItem(KEYS.budgets);
     const c = localStorage.getItem(KEYS.currency);
     const exr = localStorage.getItem(KEYS.exchangeRate);
+    const exrUSD = localStorage.getItem(KEYS.exchangeRateUSD);
     const fm = localStorage.getItem(KEYS.filterMonth);
 
     if (e) state.expenses = JSON.parse(e);
@@ -103,6 +107,7 @@ function loadFromLocalStorage(): AppState {
     if (bud) state.budgets = JSON.parse(bud);
     if (c) state.currency = c as Currency;
     if (exr) state.exchangeRate = parseFloat(exr);
+    if (exrUSD) state.exchangeRateUSD = parseFloat(exrUSD);
     if (fm) state.filterMonth = fm;
   } catch (e) {
     console.error('Failed to load state:', e);

@@ -110,6 +110,7 @@ CREATE TABLE IF NOT EXISTS settings (
   filterMonth TEXT NOT NULL,
   currency TEXT NOT NULL,
   exchangeRate NUMERIC NOT NULL,
+  exchangeRateUSD NUMERIC NOT NULL DEFAULT 83,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -155,6 +156,6 @@ CREATE POLICY "Allow all operations on budgets" ON budgets FOR ALL USING (true);
 CREATE POLICY "Allow all operations on settings" ON settings FOR ALL USING (true);
 
 -- Insert default settings
-INSERT INTO settings (id, filterMonth, currency, exchangeRate)
+INSERT INTO settings (id, filterMonth, currency, exchangeRate, exchangeRateUSD)
 VALUES ('app_settings', TO_CHAR(NOW(), 'YYYY-MM'), 'INR', 110)
 ON CONFLICT (id) DO NOTHING;
