@@ -386,28 +386,26 @@ export async function saveStateToSupabase(state: AppState): Promise<void> {
 
     // We must wait for main tables to insert before inserting repayments and utilizations (due to foreign keys)
     await Promise.all([
-      expenses.length > 0 ? supabase.from('expenses').insert(expenses) : Promise.resolve(),
-      incomes.length > 0 ? supabase.from('incomes').insert(incomes) : Promise.resolve(),
-      accounts.length > 0 ? supabase.from('accounts').insert(accounts) : Promise.resolve(),
-      bills.length > 0 ? supabase.from('bills').insert(bills) : Promise.resolve(),
-      budgets.length > 0 ? supabase.from('budgets').insert(budgets) : Promise.resolve(),
-      loans.length > 0 ? supabase.from('loans').insert(loans) : Promise.resolve(),
-      debts.length > 0 ? supabase.from('debts').insert(debts) : Promise.resolve(),
+      expenses.length > 0 ? supabase.from('expenses').insert(expenses).throwOnError() : Promise.resolve(),
+      incomes.length > 0 ? supabase.from('incomes').insert(incomes).throwOnError() : Promise.resolve(),
+      accounts.length > 0 ? supabase.from('accounts').insert(accounts).throwOnError() : Promise.resolve(),
+      bills.length > 0 ? supabase.from('bills').insert(bills).throwOnError() : Promise.resolve(),
+      budgets.length > 0 ? supabase.from('budgets').insert(budgets).throwOnError() : Promise.resolve(),
+      loans.length > 0 ? supabase.from('loans').insert(loans).throwOnError() : Promise.resolve(),
+      debts.length > 0 ? supabase.from('debts').insert(debts).throwOnError() : Promise.resolve(),
       supabase.from('settings').upsert({
         user_id: user.id,
         filterMonth: state.filterMonth,
         currency: state.currency,
         exchangeRate: state.exchangeRate,
         exchangeRateUSD: state.exchangeRateUSD || 83,
-        customExpenseCategories: state.customExpenseCategories,
-        customIncomeCategories: state.customIncomeCategories,
-      }),
+      }).throwOnError(),
     ]);
 
     // Insert dependent data
     await Promise.all([
-      repayments.length > 0 ? supabase.from('repayments').insert(repayments) : Promise.resolve(),
-      utilizations.length > 0 ? supabase.from('utilizations').insert(utilizations) : Promise.resolve(),
+      repayments.length > 0 ? supabase.from('repayments').insert(repayments).throwOnError() : Promise.resolve(),
+      utilizations.length > 0 ? supabase.from('utilizations').insert(utilizations).throwOnError() : Promise.resolve(),
     ]);
   } catch (error) {
     console.error('Failed to save state to Supabase:', error);
