@@ -346,17 +346,53 @@ export async function saveStateToSupabase(state: AppState): Promise<void> {
       supabase.from('budgets').delete().eq('user_id', user.id),
     ]);
 
-    // Insert all data with user_id
-    const withUser = (items: any[]) => items.map(item => ({ ...item, user_id: user.id }));
+    // Map expenses
+    const expenses = state.expenses.map(e => ({ id: e.id, amount: e.amount, category: e.category, date: e.date, note: e.note, currency: e.currency, source: e.source || null, user_id: user.id }));
+    
+    // Map incomes
+    const incomes = state.incomes.map(i => ({ id: i.id, amount: i.amount, category: i.category, date: i.date, note: i.note, currency: i.currency, source: i.source || null, user_id: user.id }));
+    
+    // Map accounts
+    const accounts = state.accounts.map(a => ({ id: a.id, name: a.name, type: a.type, balance: a.balance, currency: a.currency, user_id: user.id }));
+    
+    // Map bills
+    const bills = state.bills.map(b => ({ id: b.id, name: b.name, amount: b.amount, dueDate: b.dueDate, frequency: b.frequency, note: b.note, status: b.status, paidDate: b.paidDate || null, currency: b.currency, user_id: user.id }));
+    
+    // Map budgets
+    const budgets = state.budgets.map(b => ({ id: b.id, category: b.category, budget_limit: b.limit, month: b.month, currency: b.currency, user_id: user.id }));
 
+    // Map loans, debts, repayments, and utilizations
+    const loans: any[] = [];
+    const debts: any[] = [];
+    const repayments: any[] = [];
+    const utilizations: any[] = [];
+
+    state.loans.forEach(l => {
+      loans.push({ id: l.id, person: l.person, amount: l.amount, date: l.date, note: l.note || null, currency: l.currency, interestRate: l.interestRate, interestType: l.interestType, user_id: user.id });
+      if (l.repayments) {
+        l.repayments.forEach(r => repayments.push({ id: r.id, gbpAmount: r.gbpAmount, inrAmount: r.inrAmount, date: r.date, loan_id: l.id, user_id: user.id }));
+      }
+      if (l.utilizations) {
+        l.utilizations.forEach(u => utilizations.push({ id: u.id, description: u.description, gbpAmount: u.gbpAmount, inrAmount: u.inrAmount, date: u.date, loan_id: l.id, user_id: user.id }));
+      }
+    });
+
+    state.debts.forEach(d => {
+      debts.push({ id: d.id, person: d.person, amount: d.amount, date: d.date, note: d.note || null, currency: d.currency, user_id: user.id });
+      if (d.repayments) {
+        d.repayments.forEach(r => repayments.push({ id: r.id, gbpAmount: r.gbpAmount, inrAmount: r.inrAmount, date: r.date, debt_id: d.id, user_id: user.id }));
+      }
+    });
+
+    // We must wait for main tables to insert before inserting repayments and utilizations (due to foreign keys)
     await Promise.all([
-      supabase.from('expenses').insert(withUser(state.expenses)),
-      supabase.from('incomes').insert(withUser(state.incomes)),
-      supabase.from('loans').insert(withUser(state.loans)),
-      supabase.from('debts').insert(withUser(state.debts)),
-      supabase.from('accounts').insert(withUser(state.accounts)),
-      supabase.from('bills').insert(withUser(state.bills)),
-      supabase.from('budgets').insert(withUser(state.budgets)),
+      expenses.length > 0 ? supabase.from('expenses').insert(expenses) : Promise.resolve(),
+      incomes.length > 0 ? supabase.from('incomes').insert(incomes) : Promise.resolve(),
+      accounts.length > 0 ? supabase.from('accounts').insert(accounts) : Promise.resolve(),
+      bills.length > 0 ? supabase.from('bills').insert(bills) : Promise.resolve(),
+      budgets.length > 0 ? supabase.from('budgets').insert(budgets) : Promise.resolve(),
+      loans.length > 0 ? supabase.from('loans').insert(loans) : Promise.resolve(),
+      debts.length > 0 ? supabase.from('debts').insert(debts) : Promise.resolve(),
       supabase.from('settings').upsert({
         user_id: user.id,
         filterMonth: state.filterMonth,
@@ -366,6 +402,12 @@ export async function saveStateToSupabase(state: AppState): Promise<void> {
         customExpenseCategories: state.customExpenseCategories,
         customIncomeCategories: state.customIncomeCategories,
       }),
+    ]);
+
+    // Insert dependent data
+    await Promise.all([
+      repayments.length > 0 ? supabase.from('repayments').insert(repayments) : Promise.resolve(),
+      utilizations.length > 0 ? supabase.from('utilizations').insert(utilizations) : Promise.resolve(),
     ]);
   } catch (error) {
     console.error('Failed to save state to Supabase:', error);
