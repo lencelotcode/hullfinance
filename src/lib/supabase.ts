@@ -275,14 +275,14 @@ export async function loadStateFromSupabase(): Promise<AppState> {
       { data: budgets },
       { data: settings },
     ] = await Promise.all([
-      supabase.from('expenses').select('*').order('date', { ascending: false }),
-      supabase.from('incomes').select('*').order('date', { ascending: false }),
-      supabase.from('loans').select('*, repayments(*), utilizations(*)').order('date', { ascending: false }),
-      supabase.from('debts').select('*, repayments(*)').order('date', { ascending: false }),
-      supabase.from('accounts').select('*').order('name', { ascending: true }),
-      supabase.from('bills').select('*').order('dueDate', { ascending: true }),
-      supabase.from('budgets').select('*').order('month', { ascending: false }),
-      supabase.from('settings').select('*').maybeSingle(),
+      supabase.from('expenses').select('*').order('date', { ascending: false }).throwOnError(),
+      supabase.from('incomes').select('*').order('date', { ascending: false }).throwOnError(),
+      supabase.from('loans').select('*, repayments(*), utilizations(*)').order('date', { ascending: false }).throwOnError(),
+      supabase.from('debts').select('*, repayments(*)').order('date', { ascending: false }).throwOnError(),
+      supabase.from('accounts').select('*').order('name', { ascending: true }).throwOnError(),
+      supabase.from('bills').select('*').order('dueDate', { ascending: true }).throwOnError(),
+      supabase.from('budgets').select('*').order('month', { ascending: false }).throwOnError(),
+      supabase.from('settings').select('*').maybeSingle().throwOnError(),
     ]);
 
     const userSettings = settings;
@@ -305,7 +305,8 @@ export async function loadStateFromSupabase(): Promise<AppState> {
     };
   } catch (error) {
     console.error('Failed to load state from Supabase:', error);
-    // Fallback to empty state
+    throw error;
+    // Dead code below just for matching:
       return {
         remittances: [],
         expenses: [],
@@ -347,16 +348,16 @@ export async function saveStateToSupabase(state: AppState): Promise<void> {
     ]);
 
     // Map expenses
-    const expenses = state.expenses.map(e => ({ id: e.id, amount: e.amount, category: e.category, date: e.date, note: e.note, currency: e.currency, source: e.source || null, user_id: user.id }));
+    const expenses = state.expenses.map(e => ({ id: e.id, amount: e.amount, category: e.category, date: e.date, note: e.note || null, currency: e.currency, source: e.source || null, user_id: user.id }));
     
     // Map incomes
-    const incomes = state.incomes.map(i => ({ id: i.id, amount: i.amount, category: i.category, date: i.date, note: i.note, currency: i.currency, source: i.source || null, user_id: user.id }));
+    const incomes = state.incomes.map(i => ({ id: i.id, amount: i.amount, category: i.category, date: i.date, note: i.note || null, currency: i.currency, source: i.source || null, user_id: user.id }));
     
     // Map accounts
     const accounts = state.accounts.map(a => ({ id: a.id, name: a.name, type: a.type, balance: a.balance, currency: a.currency, user_id: user.id }));
     
     // Map bills
-    const bills = state.bills.map(b => ({ id: b.id, name: b.name, amount: b.amount, dueDate: b.dueDate, frequency: b.frequency, note: b.note, status: b.status, paidDate: b.paidDate || null, currency: b.currency, user_id: user.id }));
+    const bills = state.bills.map(b => ({ id: b.id, name: b.name, amount: b.amount, dueDate: b.dueDate, frequency: b.frequency, note: b.note || null, status: b.status, paidDate: b.paidDate || null, currency: b.currency, user_id: user.id }));
     
     // Map budgets
     const budgets = state.budgets.map(b => ({ id: b.id, category: b.category, budget_limit: b.limit, month: b.month, currency: b.currency, user_id: user.id }));
@@ -368,9 +369,9 @@ export async function saveStateToSupabase(state: AppState): Promise<void> {
     const utilizations: any[] = [];
 
     state.loans.forEach(l => {
-      loans.push({ id: l.id, person: l.person, amount: l.amount, date: l.date, note: l.note || null, currency: l.currency, interestRate: l.interestRate, interestType: l.interestType, user_id: user.id });
+      loans.push({ id: l.id, person: l.person, amount: l.amount, date: l.date, note: l.note || null, currency: l.currency, interestRate: l.interestRate || 0, interestType: l.interestType || 'simple', user_id: user.id });
       if (l.repayments) {
-        l.repayments.forEach(r => repayments.push({ id: r.id, gbpAmount: r.gbpAmount, inrAmount: r.inrAmount, date: r.date, loan_id: l.id, user_id: user.id }));
+        l.repayments.forEach(r => repayments.push({ id: r.id, gbpAmount: r.gbpAmount, inrAmount: r.inrAmount, date: r.date, loan_id: l.id, debt_id: null, user_id: user.id }));
       }
       if (l.utilizations) {
         l.utilizations.forEach(u => utilizations.push({ id: u.id, description: u.description, gbpAmount: u.gbpAmount, inrAmount: u.inrAmount, date: u.date, loan_id: l.id, user_id: user.id }));
@@ -380,7 +381,7 @@ export async function saveStateToSupabase(state: AppState): Promise<void> {
     state.debts.forEach(d => {
       debts.push({ id: d.id, person: d.person, amount: d.amount, date: d.date, note: d.note || null, currency: d.currency, user_id: user.id });
       if (d.repayments) {
-        d.repayments.forEach(r => repayments.push({ id: r.id, gbpAmount: r.gbpAmount, inrAmount: r.inrAmount, date: r.date, debt_id: d.id, user_id: user.id }));
+        d.repayments.forEach(r => repayments.push({ id: r.id, gbpAmount: r.gbpAmount, inrAmount: r.inrAmount, date: r.date, loan_id: null, debt_id: d.id, user_id: user.id }));
       }
     });
 
