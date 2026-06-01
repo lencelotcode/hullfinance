@@ -4,6 +4,7 @@ import { DEFAULT_STATE } from '@/lib/types';
 import { loadState, saveState } from '@/lib/data';
 import { calculateLoanWithInterest, getDebtSummary, convertGBPtoINR } from '@/lib/finance';
 import { uid, today } from '@/lib/finance';
+import { supabase } from '@/lib/supabase';
 
 interface FinanceContextType {
   state: AppState;
@@ -12,6 +13,7 @@ interface FinanceContextType {
   setActiveTab: (tab: Tab) => void;
   loading: boolean;
   error: string | null;
+  session: any | null;
   filteredExpenses: Expense[];
   filteredIncomes: Income[];
   totalExpenses: number;
@@ -258,10 +260,10 @@ function reducer(state: AppState, action: Action): AppState {
       newState = { ...state, bills: [...state.bills, { ...action.payload, id: uid(), status: 'pending' }] };
       saveState(newState);
       return newState;
-        case "PAY_BILL": {
+    case 'PAY_BILL': {
       const bill = state.bills.find((b) => b.id === action.payload);
       const updatedBills = state.bills.map((b) =>
-        b.id === action.payload ? { ...b, status: "paid" as const, paidDate: today() } : b
+        b.id === action.payload ? { ...b, status: 'paid' as const, paidDate: today() } : b
       );
       
       let nextExpenses = state.expenses;
@@ -271,24 +273,24 @@ function reducer(state: AppState, action: Action): AppState {
           amount: bill.amount,
           category: bill.name,
           date: today(),
-          note: "Bill payment: " + bill.name,
+          note: 'Bill payment: ' + bill.name,
           currency: bill.currency,
-          source: "Owned Money",
+          source: 'Owned Money',
           exchangeRateAtTime: state.exchangeRate,
           exchangeRateUSDAtTime: state.exchangeRateUSD || 83
         }];
       }
       
-      if (bill && bill.frequency !== "once") {
+      if (bill && bill.frequency !== 'once') {
         const nextDue = new Date(bill.dueDate);
-        if (bill.frequency === "monthly") nextDue.setMonth(nextDue.getMonth() + 1);
-        else if (bill.frequency === "weekly") nextDue.setDate(nextDue.getDate() + 7);
-        else if (bill.frequency === "yearly") nextDue.setFullYear(nextDue.getFullYear() + 1);
+        if (bill.frequency === 'monthly') nextDue.setMonth(nextDue.getMonth() + 1);
+        else if (bill.frequency === 'weekly') nextDue.setDate(nextDue.getDate() + 7);
+        else if (bill.frequency === 'yearly') nextDue.setFullYear(nextDue.getFullYear() + 1);
         updatedBills.push({
           ...bill,
           id: uid(),
           dueDate: nextDue.toISOString().slice(0, 10),
-          status: "pending" as const,
+          status: 'pending' as const,
           paidDate: undefined,
         });
       }
@@ -352,26 +354,38 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
   const [activeTab, setActiveTabRaw] = React.useState<Tab>('dashboard');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [session, setSession] = useState<any | null>(null);
 
-  console.log('FinanceProvider initializing...');
+  const initState = useCallback(async () => {
+    setLoading(true);
+    try {
+      const loadedState = await loadState();
+      dispatch({ type: 'LOAD_STATE', payload: loadedState });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load state');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  // Load state from Supabase on mount
   useEffect(() => {
-    async function initState() {
-      try {
-        console.log('Loading state...');
-        const loadedState = await loadState();
-        console.log('State loaded:', loadedState);
-        dispatch({ type: 'LOAD_STATE', payload: loadedState });
-      } catch (error) {
-        console.error('Failed to load initial state:', error);
-        setError(error instanceof Error ? error.message : 'Failed to load state');
-      } finally {
+    supabase?.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session) initState();
+      else setLoading(false);
+    });
+
+    const { data: { subscription } } = supabase?.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session) initState();
+      else {
+        dispatch({ type: 'LOAD_STATE', payload: DEFAULT_STATE });
         setLoading(false);
       }
-    }
-    initState();
-  }, []);
+    }) || { data: { subscription: null } };
+
+    return () => subscription?.unsubscribe();
+  }, [initState]);
 
   const setActiveTab = useCallback((tab: Tab) => {
     setActiveTabRaw(tab);
@@ -380,7 +394,6 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
   const filteredExpenses = state.expenses.filter((e) => e.date.startsWith(state.filterMonth));
   const filteredIncomes = state.incomes.filter((i) => i.date.startsWith(state.filterMonth));
 
-  
   function convertToTarget(amt: number | string, c: string, targetC: string, rate: number, rateUSD: number) {
     if (c === targetC) return Number(amt);
     let inrVal = Number(amt);
@@ -435,6 +448,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
         setActiveTab,
         loading,
         error,
+        session,
         filteredExpenses,
         filteredIncomes,
         totalExpenses,

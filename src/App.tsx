@@ -1,3 +1,4 @@
+import React, { useEffect, useState } from 'react';
 import { useFinance } from '@/context/FinanceContext';
 import {
   LayoutDashboard,
@@ -11,6 +12,7 @@ import {
   BarChart3,
   Settings,
   Calculator,
+  LogOut,
 } from 'lucide-react';
 import Dashboard from '@/pages/Dashboard';
 import ExpensesPage from '@/pages/ExpensesPage';
@@ -23,7 +25,10 @@ import BudgetPage from '@/pages/BudgetPage';
 import AnalyticsPage from '@/pages/AnalyticsPage';
 import SettingsPage from '@/pages/SettingsPage';
 import TaxPage from '@/pages/TaxPage';
+import LoginPage from '@/pages/LoginPage';
+import SignupPage from '@/pages/SignupPage';
 import { monthLabel } from '@/lib/finance';
+import { supabase } from '@/lib/supabase';
 
 const TABS = [
   { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -51,9 +56,28 @@ function getMonthOptions() {
 }
 
 export default function App() {
-  const { state, dispatch, activeTab, setActiveTab, loading, error } = useFinance();
+  const { state, dispatch, activeTab, setActiveTab, loading, error, session } = useFinance();
+  const [authView, setAuthView] = useState<'login' | 'signup'>('login');
 
-  // Show error state
+  if (!session && !loading) {
+    return authView === 'login' ? (
+      <LoginPage onShowSignup={() => setAuthView('signup')} />
+    ) : (
+      <SignupPage onShowLogin={() => setAuthView('login')} />
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg)', color: 'var(--text)' }}>
+        <div className="text-center">
+          <div className="inline-block animate-spin h-12 w-12 border-4 mb-4" style={{ borderColor: 'var(--border2)', borderTopColor: 'var(--text)' }}></div>
+          <p style={{ color: 'var(--muted)' }}>Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'var(--bg)', color: 'var(--text)' }}>
@@ -61,19 +85,6 @@ export default function App() {
           <div className="text-6xl mb-4" style={{ color: 'var(--red)' }}>⚠️</div>
           <h2 className="text-xl font-bold mb-2" style={{ fontFamily: 'var(--font-head)', color: 'var(--text)' }}>Failed to Load</h2>
           <p className="mb-4" style={{ color: 'var(--muted)' }}>{error}</p>
-          <p className="text-sm" style={{ color: 'var(--muted2)' }}>The app will use localStorage instead</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Show loading state
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg)', color: 'var(--text)' }}>
-        <div className="text-center">
-          <div className="inline-block animate-spin h-12 w-12 border-4 mb-4" style={{ borderColor: 'var(--border2)', borderTopColor: 'var(--text)' }}></div>
-          <p style={{ color: 'var(--muted)' }}>Loading your finance data...</p>
         </div>
       </div>
     );
@@ -97,7 +108,7 @@ export default function App() {
             <div className="hf-brand-sub">UK Masters Student Edition</div>
           </div>
         </div>
-        <div className="hf-header-right" style={{ flexWrap: "wrap", justifyContent: "flex-end" }}>
+        <div className="hf-header-right" style={{ flexWrap: 'wrap', justifyContent: 'flex-end' }}>
           <div className="hf-fx-row">
             <span>1 GBP =</span>
             <input
@@ -113,7 +124,7 @@ export default function App() {
             />
             <span>INR</span>
           </div>
-          <div className="hf-fx-row" style={{ marginLeft: "12px" }}>
+          <div className="hf-fx-row" style={{ marginLeft: '12px' }}>
             <span>1 USD =</span>
             <input
               className="hf-fx-input"
@@ -123,7 +134,7 @@ export default function App() {
               step="0.01"
               onChange={(e) => {
                 const val = parseFloat(e.target.value);
-                if (val > 0) dispatch({ type: "SET_EXCHANGE_RATE_USD", payload: val });
+                if (val > 0) dispatch({ type: 'SET_EXCHANGE_RATE_USD', payload: val });
               }}
             />
             <span>INR</span>
@@ -142,12 +153,20 @@ export default function App() {
               ₹ INR
             </button>
             <button
-              className={`hf-currency-btn ${state.currency === "USD" ? "active" : ""}`}
-              onClick={() => dispatch({ type: "SET_CURRENCY", payload: "USD" })}
+              className={`hf-currency-btn ${state.currency === 'USD' ? 'active' : ''}`}
+              onClick={() => dispatch({ type: 'SET_CURRENCY', payload: 'USD' })}
             >
               $ USD
             </button>
           </div>
+          <button
+            className="hf-currency-btn"
+            style={{ marginLeft: '8px', padding: '4px 8px' }}
+            onClick={() => supabase?.auth.signOut()}
+            title="Logout"
+          >
+            <LogOut size={16} />
+          </button>
         </div>
       </header>
 
@@ -195,20 +214,21 @@ export default function App() {
           {activeTab === 'loans' && <LoansPage />}
           {activeTab === 'debts' && <DebtsPage />}
           {activeTab === 'budget' && <BudgetPage />}
-{activeTab === 'analytics' && <AnalyticsPage />}
-{activeTab === 'tax' && <TaxPage />}
-{activeTab === 'settings' && <SettingsPage />}
+          {activeTab === 'analytics' && <AnalyticsPage />}
+          {activeTab === 'tax' && <TaxPage />}
+          {activeTab === 'settings' && <SettingsPage />}
         </div>
       </main>
+
       {/* MOBILE BOTTOM NAV */}
       <nav className="hf-bottom-nav">
-        {TABS.slice(0, 4).map((tab) => {
+        {TABS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.key;
           return (
             <button
               key={tab.key}
-              className={"hf-bottom-nav-item " + (isActive ? "active" : "")}
+              className={'hf-bottom-nav-item ' + (isActive ? 'active' : '')}
               onClick={() => setActiveTab(tab.key as any)}
             >
               <Icon size={20} />
@@ -216,13 +236,6 @@ export default function App() {
             </button>
           );
         })}
-        <button
-          className={"hf-bottom-nav-item " + (activeTab === "settings" ? "active" : "")}
-          onClick={() => setActiveTab("settings")}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-          <span>More</span>
-        </button>
       </nav>
     </div>
   );

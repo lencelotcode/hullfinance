@@ -20,6 +20,25 @@ export const supabase = supabaseClientAvailable
   ? createClient(supabaseUrl!, supabaseAnonKey!) 
   : null;
 
+/**
+ * Checks if the Supabase project is reachable.
+ * Returns true if reachable, false otherwise.
+ */
+export async function checkSupabaseConnection(): Promise<boolean> {
+  if (!supabase) return false;
+  try {
+    // Try a simple health check or fetch
+    const { error } = await supabase.from('settings').select('id').limit(1).maybeSingle();
+    // If we get a 401, it means the project is there but we're not auth'd yet (expected)
+    // If we get a 404, it might mean the table doesn't exist (expected if not migrated)
+    // We mainly want to catch network errors / CORS issues here.
+    if (error && (error as any).message === 'Load failed') return false;
+    return true;
+  } catch (err) {
+    return false;
+  }
+}
+
 // Database types for Supabase
 export interface DbExpense {
   id: string;
@@ -29,6 +48,7 @@ export interface DbExpense {
   note: string;
   currency: string;
   source: string;
+  user_id?: string;
   created_at?: string;
 }
 
@@ -40,6 +60,7 @@ export interface DbIncome {
   note: string;
   currency: string;
   source?: string;
+  user_id?: string;
   created_at?: string;
 }
 
@@ -50,6 +71,7 @@ export interface DbRepayment {
   date: string;
   loan_id?: string;
   debt_id?: string;
+  user_id?: string;
   created_at?: string;
 }
 
@@ -60,6 +82,7 @@ export interface DbUtilization {
   inrAmount: number;
   date: string;
   loan_id: string;
+  user_id?: string;
   created_at?: string;
 }
 
@@ -74,6 +97,7 @@ export interface DbLoan {
   interestType: string;
   repayments?: DbRepayment[];
   utilizations?: DbUtilization[];
+  user_id?: string;
   created_at?: string;
 }
 
@@ -85,6 +109,7 @@ export interface DbDebt {
   note: string;
   currency: string;
   repayments?: DbRepayment[];
+  user_id?: string;
   created_at?: string;
 }
 
@@ -94,6 +119,7 @@ export interface DbAccount {
   type: string;
   balance: number;
   currency: string;
+  user_id?: string;
   created_at?: string;
 }
 
@@ -107,6 +133,7 @@ export interface DbBill {
   status: string;
   paidDate?: string;
   currency: string;
+  user_id?: string;
   created_at?: string;
 }
 
@@ -116,15 +143,18 @@ export interface DbBudget {
   budget_limit: number;
   month: string;
   currency: string;
+  user_id?: string;
   created_at?: string;
 }
 
 export interface DbSettings {
-  id?: string;
+  user_id?: string;
   filterMonth: string;
   currency: string;
   exchangeRate: number;
   exchangeRateUSD: number;
+  customExpenseCategories?: string[];
+  customIncomeCategories?: string[];
   created_at?: string;
 }
 
@@ -252,8 +282,10 @@ export async function loadStateFromSupabase(): Promise<AppState> {
       supabase.from('accounts').select('*').order('name', { ascending: true }),
       supabase.from('bills').select('*').order('dueDate', { ascending: true }),
       supabase.from('budgets').select('*').order('month', { ascending: false }),
-      supabase.from('settings').select('*').single(),
+      supabase.from('settings').select('*').maybeSingle(),
     ]);
+
+    const userSettings = settings;
 
     return {
       remittances: [],
@@ -264,12 +296,12 @@ export async function loadStateFromSupabase(): Promise<AppState> {
       accounts: (accounts || []).map(dbAccountToApp),
       bills: (bills || []).map(dbBillToApp),
       budgets: (budgets || []).map(dbBudgetToApp),
-      filterMonth: settings?.filterMonth || new Date().toISOString().slice(0, 7),
-      currency: (settings?.currency || 'INR') as 'GBP' | 'INR' | 'USD',
-      exchangeRate: settings?.exchangeRate || 110,
-      exchangeRateUSD: settings?.exchangeRateUSD || 83,
-      customExpenseCategories: settings?.customExpenseCategories || [],
-      customIncomeCategories: settings?.customIncomeCategories || [],
+      filterMonth: userSettings?.filterMonth || new Date().toISOString().slice(0, 7),
+      currency: (userSettings?.currency || 'INR') as 'GBP' | 'INR' | 'USD',
+      exchangeRate: userSettings?.exchangeRate || 110,
+      exchangeRateUSD: userSettings?.exchangeRateUSD || 83,
+      customExpenseCategories: (userSettings as any)?.customExpenseCategories || [],
+      customIncomeCategories: (userSettings as any)?.customIncomeCategories || [],
     };
   } catch (error) {
     console.error('Failed to load state from Supabase:', error);
@@ -299,33 +331,40 @@ export async function saveStateToSupabase(state: AppState): Promise<void> {
     throw new Error('Supabase client not available');
   }
 
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('User not authenticated');
+
   try {
-    // Clear existing data
+    // Clear existing data for THIS user
     await Promise.all([
-      supabase.from('expenses').delete().neq('id', ''),
-      supabase.from('incomes').delete().neq('id', ''),
-      supabase.from('loans').delete().neq('id', ''),
-      supabase.from('debts').delete().neq('id', ''),
-      supabase.from('accounts').delete().neq('id', ''),
-      supabase.from('bills').delete().neq('id', ''),
-      supabase.from('budgets').delete().neq('id', ''),
+      supabase.from('expenses').delete().eq('user_id', user.id),
+      supabase.from('incomes').delete().eq('user_id', user.id),
+      supabase.from('loans').delete().eq('user_id', user.id),
+      supabase.from('debts').delete().eq('user_id', user.id),
+      supabase.from('accounts').delete().eq('user_id', user.id),
+      supabase.from('bills').delete().eq('user_id', user.id),
+      supabase.from('budgets').delete().eq('user_id', user.id),
     ]);
 
-    // Insert all data
+    // Insert all data with user_id
+    const withUser = (items: any[]) => items.map(item => ({ ...item, user_id: user.id }));
+
     await Promise.all([
-      supabase.from('expenses').insert(state.expenses),
-      supabase.from('incomes').insert(state.incomes),
-      supabase.from('loans').insert(state.loans),
-      supabase.from('debts').insert(state.debts),
-      supabase.from('accounts').insert(state.accounts),
-      supabase.from('bills').insert(state.bills),
-      supabase.from('budgets').insert(state.budgets),
+      supabase.from('expenses').insert(withUser(state.expenses)),
+      supabase.from('incomes').insert(withUser(state.incomes)),
+      supabase.from('loans').insert(withUser(state.loans)),
+      supabase.from('debts').insert(withUser(state.debts)),
+      supabase.from('accounts').insert(withUser(state.accounts)),
+      supabase.from('bills').insert(withUser(state.bills)),
+      supabase.from('budgets').insert(withUser(state.budgets)),
       supabase.from('settings').upsert({
-        id: 'app_settings',
+        user_id: user.id,
         filterMonth: state.filterMonth,
         currency: state.currency,
         exchangeRate: state.exchangeRate,
         exchangeRateUSD: state.exchangeRateUSD || 83,
+        customExpenseCategories: state.customExpenseCategories,
+        customIncomeCategories: state.customIncomeCategories,
       }),
     ]);
   } catch (error) {
@@ -337,7 +376,8 @@ export async function saveStateToSupabase(state: AppState): Promise<void> {
 // Individual CRUD operations for real-time updates
 export async function addExpenseToSupabase(expense: any): Promise<void> {
   if (!supabase) throw new Error('Supabase not configured');
-  const { error } = await supabase.from('expenses').insert(expense);
+  const { data: { user } } = await supabase.auth.getUser();
+  const { error } = await supabase.from('expenses').insert({ ...expense, user_id: user?.id });
   if (error) throw error;
 }
 
@@ -349,7 +389,8 @@ export async function deleteExpenseFromSupabase(id: string): Promise<void> {
 
 export async function addIncomeToSupabase(income: any): Promise<void> {
   if (!supabase) throw new Error('Supabase not configured');
-  const { error } = await supabase.from('incomes').insert(income);
+  const { data: { user } } = await supabase.auth.getUser();
+  const { error } = await supabase.from('incomes').insert({ ...income, user_id: user?.id });
   if (error) throw error;
 }
 
@@ -361,7 +402,8 @@ export async function deleteIncomeFromSupabase(id: string): Promise<void> {
 
 export async function addLoanToSupabase(loan: any): Promise<void> {
   if (!supabase) throw new Error('Supabase not configured');
-  const { error } = await supabase.from('loans').insert(loan);
+  const { data: { user } } = await supabase.auth.getUser();
+  const { error } = await supabase.from('loans').insert({ ...loan, user_id: user?.id });
   if (error) throw error;
 }
 
@@ -373,7 +415,8 @@ export async function deleteLoanFromSupabase(id: string): Promise<void> {
 
 export async function addDebtToSupabase(debt: any): Promise<void> {
   if (!supabase) throw new Error('Supabase not configured');
-  const { error } = await supabase.from('debts').insert(debt);
+  const { data: { user } } = await supabase.auth.getUser();
+  const { error } = await supabase.from('debts').insert({ ...debt, user_id: user?.id });
   if (error) throw error;
 }
 
@@ -385,7 +428,8 @@ export async function deleteDebtFromSupabase(id: string): Promise<void> {
 
 export async function addAccountToSupabase(account: any): Promise<void> {
   if (!supabase) throw new Error('Supabase not configured');
-  const { error } = await supabase.from('accounts').insert(account);
+  const { data: { user } } = await supabase.auth.getUser();
+  const { error } = await supabase.from('accounts').insert({ ...account, user_id: user?.id });
   if (error) throw error;
 }
 
@@ -397,7 +441,8 @@ export async function deleteAccountFromSupabase(id: string): Promise<void> {
 
 export async function addBillToSupabase(bill: any): Promise<void> {
   if (!supabase) throw new Error('Supabase not configured');
-  const { error } = await supabase.from('bills').insert(bill);
+  const { data: { user } } = await supabase.auth.getUser();
+  const { error } = await supabase.from('bills').insert({ ...bill, user_id: user?.id });
   if (error) throw error;
 }
 
@@ -409,7 +454,8 @@ export async function deleteBillFromSupabase(id: string): Promise<void> {
 
 export async function addBudgetToSupabase(budget: any): Promise<void> {
   if (!supabase) throw new Error('Supabase not configured');
-  const { error } = await supabase.from('budgets').insert(budget);
+  const { data: { user } } = await supabase.auth.getUser();
+  const { error } = await supabase.from('budgets').insert({ ...budget, user_id: user?.id });
   if (error) throw error;
 }
 
@@ -421,8 +467,12 @@ export async function deleteBudgetFromSupabase(id: string): Promise<void> {
 
 export async function updateSettingsInSupabase(settings: Partial<AppState>): Promise<void> {
   if (!supabase) throw new Error('Supabase not configured');
+  
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('User not authenticated');
+
   const { error } = await supabase.from('settings').upsert({
-    id: 'app_settings',
+    user_id: user.id,
     ...settings,
   });
   if (error) throw error;

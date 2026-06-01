@@ -904,7 +904,7 @@
     
     .hf-bottom-nav {
       display: flex;
-      justify-content: space-around;
+      justify-content: flex-start;
       align-items: center;
       position: fixed;
       bottom: 0;
@@ -912,8 +912,15 @@
       right: 0;
       background: var(--surface2);
       border-top: 1px solid var(--border);
-      padding: 10px 0 calc(10px + env(safe-area-inset-bottom));
+      padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
       z-index: 200;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+
+    .hf-bottom-nav::-webkit-scrollbar {
+      display: none;
     }
     
     .hf-bottom-nav-item {
@@ -926,7 +933,9 @@
       font-family: var(--font-body);
       background: none;
       border: none;
-      padding: 8px;
+      padding: 8px 16px;
+      min-width: 80px;
+      flex-shrink: 0;
     }
     
     .hf-bottom-nav-item.active {
